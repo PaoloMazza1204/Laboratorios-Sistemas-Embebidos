@@ -10,12 +10,14 @@
 // *****************************************************************************
 // Section: Data Types
 // *****************************************************************************
-typedef enum {
+typedef enum
+{
     UT_TMR_DELAY_INIT,
     UT_TMR_DELAY_WAIT
 } UT_TMR_DELAY_STATE;
 
-typedef struct {
+typedef struct
+{
     uint32_t startValue;
     UT_TMR_DELAY_STATE state;
 } ut_tmrDelay_t;
