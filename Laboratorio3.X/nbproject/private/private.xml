@@ -3,25 +3,9 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/main.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/system.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/rtcc.h</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/utils/utils.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/usb/usb_device_cdc.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/tmr2.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/usb/usb_device.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/rtcc.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/utils/utils.h</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/usb/usb_device.h</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/platform/WS2812.h</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/usb/usb_descriptors.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/interrupt_manager.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/usb/example_mcc_usb_cdc.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/platform/WS2812.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/tmr2.h</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/usb/usb_device_events.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/pin_manager.h</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios/Laboratorio%203/Laboratorio%203/Laboratorio3.X/mcc_generated_files/pin_manager.c</file>
+            <file>file:/C:/Users/FIT/Desktop/Tercer%20Año/Sistemas%20embedidos/Laboratorios-Sistemas-Embebidos/Laboratorio3.X/platform/WS2812.c</file>
+            <file>file:/C:/Users/FIT/Desktop/Tercer%20Año/Sistemas%20embedidos/Laboratorios-Sistemas-Embebidos/Laboratorio3.X/platform/led_RGB.c</file>
+            <file>file:/C:/Users/FIT/Desktop/Tercer%20Año/Sistemas%20embedidos/Laboratorios-Sistemas-Embebidos/Laboratorio3.X/main.c</file>
         </group>
     </open-files>
 </project-private>
