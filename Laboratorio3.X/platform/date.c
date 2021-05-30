@@ -81,7 +81,7 @@ bool set_date(uint8_t* buffer)
     if (valid_time(hours, minutes, seconds) && (valid_date(day, month, year)))
     {
         date.tm_year = map_year(year);
-        date.tm_mon = month; // -1.
+        date.tm_mon = month - 1;
         date.tm_mday = day;
         date.tm_hour = hours;
         date.tm_min = minutes;

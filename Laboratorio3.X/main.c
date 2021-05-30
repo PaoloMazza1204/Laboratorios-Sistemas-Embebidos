@@ -150,13 +150,9 @@ int main(void)
                             struct tm* actual = gmtime((time_t*) & last_time);
                             uint8_t str_hour[20]; // String que contendrá el mensaje.
                             uint16_t year = actual->tm_year + 1900;
-                            /* Fix posible para el tema del mes:
-                             * uint8_t month = actual->tm_mon+1;
-                             * REEMPLAZAR actual->tm_mon POR month en el sprintf
-                             * (Segundo parámetro luego del formato de string).
-                             *  */
+                            uint8_t month = actual->tm_mon+1;
                             // Formato del momento de la última modificación del led.
-                            sprintf(str_hour, "%d/%d/%d %d:%d:%d", year, actual->tm_mon,
+                            sprintf(str_hour, "%d/%d/%d %d:%d:%d", year, month,
                                     actual->tm_mday, actual->tm_hour, actual->tm_min, actual->tm_sec);
                             // Indicamos última modificación.
                             numBytes = sprintf(buffer, "\nLed: %d\nColor: %d\nHora: %s\n",
