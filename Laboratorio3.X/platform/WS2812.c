@@ -196,7 +196,3 @@ void WS2812_send( ws2812_t *p_leds, uint8_t p_length )
     
     INTERRUPT_GlobalEnable();
 }
-
-/* *****************************************************************************
- End of File
- */
