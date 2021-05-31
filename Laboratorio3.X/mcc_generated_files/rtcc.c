@@ -75,7 +75,7 @@ void RTCC_Initialize(void)
    if(!RTCCTimeInitialized())
    {
        // set 2021-05-20 14-11-15
-       RTCDATE = 0x70010104; // Year/Month/Date/Wday
+       RTCDATE = 0x70000104; // Year/Month/Date/Wday
        RTCTIME = 0x00000000; //  hours/minutes/seconds
        
    }
