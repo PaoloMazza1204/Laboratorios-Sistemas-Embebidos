@@ -79,6 +79,7 @@ void ledA_on_off()
 // Distintos modos del programa.
 typedef enum
 {
+    WAITING, // Esperando mensaje inicial.
     INIT, // Pronto para recibir un modo.
     DATE, // Esperando ingreso de fecha.
     LED   // Esperando ingreso de led a prender y su color.
@@ -95,7 +96,7 @@ int main(void)
     initialize_app_register();
     initialize_leds_RGB();
     p_timer.state = UT_TMR_DELAY_INIT;
-    mode = INIT;
+    mode = WAITING;
     SYSTEM_Initialize();
     struct tm date = get_date();
     RTCC_TimeGet(&date);
@@ -117,8 +118,13 @@ int main(void)
             {
                 numBytes = getsUSBUSART(buffer, sizeof (buffer));
                 
+                if( (numBytes > 0) && (mode == WAITING))
+                {
+                    numBytes = sprintf(buffer, "\n1-Ingresar fecha\n2-Prender led\n3-Consultar modificación\n");
+                    mode = INIT;
+                }
                 // Si estamos esperando un modo e ingresa un caracter.
-                if ((numBytes == 1) && (mode == INIT))
+                else if ((numBytes == 1) && (mode == INIT))
                 {
                     // Si es el modo 1 (Funcionalidad 1).
                     if (buffer[0] == '1')
