@@ -52,10 +52,10 @@
 #include <stdbool.h>
 
 #include "watchdog.h"
-#include "usb/usb.h"
 #include "interrupt_manager.h"
 #include "exceptions.h"
 #include "rtcc.h"
+#include "usb/usb.h"
 
 #warning "This file will be removed in future MCC releases. Use system.h instead."
 
