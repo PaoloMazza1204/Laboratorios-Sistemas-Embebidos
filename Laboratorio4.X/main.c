@@ -30,10 +30,12 @@
 #include "mcc_generated_files/system.h"
 #include "mcc_generated_files/pin_manager.h"
 #include "platform/date.h"
+#include "freeRTOS/include/semphr.h"
 
 // tasks
 void blinkLED(void *p_param);
 void userInterface(void* p_param);
+void checkUSB(void* p_param);
 
 typedef enum {
     WAITING, // Esperando mensaje inicial.
@@ -41,6 +43,8 @@ typedef enum {
     DATE, // Esperando ingreso de fecha.
     LED // Esperando ingreso de led a prender y su color.
 } MODE;
+
+SemaphoreHandle_t semaphore;
 
 uint8_t displayOptions(uint8_t* buffer, MODE* mode);
 void functionalities(uint8_t* buffer, MODE* mode, uint8_t* numBytes);
@@ -51,10 +55,12 @@ void functionalities(uint8_t* buffer, MODE* mode, uint8_t* numBytes);
 int main(void) {
     // initialize the device
     SYSTEM_Initialize();
+    semaphore = xSemaphoreCreateBinary();
 
     /* Create the tasks defined within this file. */
     xTaskCreate(blinkLED, "task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(userInterface, "task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(checkUSB, "task3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 
     /* Finally start the scheduler. */
     vTaskStartScheduler();
@@ -76,6 +82,19 @@ void blinkLED(void *p_param) {
     }
 }
 
+void checkUSB(void *p_param) {
+    // CREAR SEMAFORO QUE ARRANQUE EN 1 
+    for (;;) {
+        if ((USBGetDeviceState() < CONFIGURED_STATE) ||
+                (USBIsDeviceSuspended() == true)) {
+            continue;
+        } else if (USBUSARTIsTxTrfReady()) {
+            xSemaphoreGive(semaphore);
+        }
+        CDCTxService();
+    }
+}
+
 void userInterface(void *p_param) {
     uint8_t numBytes;
     uint8_t buffer[64];
@@ -86,30 +105,28 @@ void userInterface(void *p_param) {
     RTCC_TimeGet(&date);
 
     for (;;) {
-        if ((USBGetDeviceState() < CONFIGURED_STATE) ||
-                (USBIsDeviceSuspended() == true)) {
-            continue;
-        } else {
-            if (USBUSARTIsTxTrfReady()) {
-                numBytes = getsUSBUSART(buffer, sizeof (buffer));
+        //        if ((USBGetDeviceState() < CONFIGURED_STATE) ||
+        //                (USBIsDeviceSuspended() == true)) {
+        //            continue;
+        //        } else {
+        xSemaphoreTake(semaphore, portMAX_DELAY);
+        numBytes = getsUSBUSART(buffer, sizeof (buffer));
 
-                if ((numBytes > 0) && (mode == WAITING)) {
-                    numBytes = sprintf(buffer, "\n1-Ingresar fecha\n2-Prender led\n3-Consultar modificación\n");
-                    mode = INIT;
-                }
-                // Si estamos esperando un modo e ingresa un caracter.
-                else if ((numBytes == 1) && (mode == INIT)) {
-                    numBytes = displayOptions(buffer, &mode);
-                }
-                // Estamos esperando input para una funcionalidad específica.
-                else {
-                    functionalities(buffer, &mode, &numBytes);
-                }
-                // Mandamos el mensaje necesario al buffer, si corresponde.
-                putUSBUSART(buffer, numBytes);
-            }
+        if ((numBytes > 0) && (mode == WAITING)) {
+            numBytes = sprintf(buffer, "\n1-Ingresar fecha\n2-Prender led\n3-Consultar modificación\n");
+            mode = INIT;
+        }// Si estamos esperando un modo e ingresa un caracter.
+        else if ((numBytes == 1) && (mode == INIT)) {
+            numBytes = displayOptions(buffer, &mode);
+        }// Estamos esperando input para una funcionalidad específica.
+        else {
+            functionalities(buffer, &mode, &numBytes);
         }
-        CDCTxService();
+        // Mandamos el mensaje necesario al buffer, si corresponde.
+        putUSBUSART(buffer, numBytes);
+// HACER UN RELEASE DEL SEMAFORO NUEVO PARA QUE PUEDA SER USADO DE NUEVO POR checkUSB
+        //        }
+        //        CDCTxService();
     }
 }
 
