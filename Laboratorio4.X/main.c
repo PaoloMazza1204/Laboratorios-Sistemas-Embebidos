@@ -45,6 +45,7 @@ typedef enum {
 } MODE;
 
 SemaphoreHandle_t semaphore;
+SemaphoreHandle_t mutex;
 
 uint8_t displayOptions(uint8_t* buffer, MODE* mode);
 void functionalities(uint8_t* buffer, MODE* mode, uint8_t* numBytes);
@@ -56,12 +57,13 @@ int main(void) {
     // initialize the device
     SYSTEM_Initialize();
     semaphore = xSemaphoreCreateBinary();
+    mutex = xSemaphoreCreateMutex();
 
     /* Create the tasks defined within this file. */
     xTaskCreate(blinkLED, "task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(userInterface, "task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(userInterface, "task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     xTaskCreate(checkUSB, "task3", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-
+    
     /* Finally start the scheduler. */
     vTaskStartScheduler();
 
@@ -85,11 +87,16 @@ void blinkLED(void *p_param) {
 void checkUSB(void *p_param) {
     // CREAR SEMAFORO QUE ARRANQUE EN 1 
     for (;;) {
+        //xSemaphoreTake(mutex,portMAX_DELAY);
         if ((USBGetDeviceState() < CONFIGURED_STATE) ||
                 (USBIsDeviceSuspended() == true)) {
+            //xSemaphoreGive(mutex);
             continue;
         } else if (USBUSARTIsTxTrfReady()) {
             xSemaphoreGive(semaphore);
+        }
+        else{
+            //xSemaphoreGive(mutex);
         }
         CDCTxService();
     }
@@ -124,6 +131,7 @@ void userInterface(void *p_param) {
         }
         // Mandamos el mensaje necesario al buffer, si corresponde.
         putUSBUSART(buffer, numBytes);
+        xSemaphoreGive(mutex);
 // HACER UN RELEASE DEL SEMAFORO NUEVO PARA QUE PUEDA SER USADO DE NUEVO POR checkUSB
         //        }
         //        CDCTxService();
