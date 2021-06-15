@@ -1,19 +1,33 @@
 /******************************************************************************
  * ANÁLISIS ÁRBOL DEL PROYECTO (PARTE 1 B)                                    *
- * En Header Files tenemos el mismo arbol de proyecto que en el lab anterior, *
- * ademas, se incluye el archivo FreeRTOSConfig.h y la carpeta freeRTOS donde *
- * tenemos varios .h pertenecientes al sistema operativo:
- * - croutine.h posee funcones         
- * - FreeRTOS.h
- * - list.h
- * - portable.h
- * - projdefs.h
- * - queue.h
- * - semphr.h
- * - task.h
- * - timers.h                   *
- * En Source Files tambien tenemos el mismo arbol de proyecto que en el lab 3,*
- * ademas, tenemos la carpeta de freeRTOS con los .c correspondientes a la    *
+ * En Header Files tenemos el mismo árbol de proyecto que en el lab anterior, *
+ * además, se incluye el archivo FreeRTOSConfig.h y la carpeta freeRTOS donde *
+ * tenemos varios *.h pertenecientes al sistema operativo:                    *
+ *                                                                            *
+ * - croutine.h posee las definiciones correspondientes a la croutine         *
+ *                                                                            *
+ * - FreeRTOS.h posee definiciones y macros que mapean a nombres de tipos de  *
+ *              datos utilizados por el S.O                                   *
+ *                                                                            *
+ * - list.h definiciones y macros sobre la implementación de la lista         *
+ *          utilizada por el scheduler y el usuario                           *
+ *                                                                            *
+ * - portable.h se utiliza para mantener versiones antiguas (legacy)          *                                                                
+ *                                                                            *
+ * - projdefs.h define los diferentes tipos de errores que pueden ocurrir     *
+ *              utilizando el S.O asi como también el macro de la función     *
+ *              pdMS_TO_TICKS.                                                *
+ *                                                                            *
+ * - queue.h definiciones y macros sobre la implementación de la cola         *
+ *                                                                            *
+ * - semphr.h definiciones y macros sobre la implementación de los semáforos  *
+ *                                                                            *
+ * - task.h definiciones y macros sobre la implementación de las tareas       *
+ *                                                                            *
+ * - timers.h definiciones y macros sobre la implementación de los timers     *
+ *                                                                            *
+ * En Source Files también tenemos el mismo árbol de proyecto que en el lab 3,*
+ * además, tenemos la carpeta de freeRTOS con los *.c correspondientes a la   *
  * carpeta freeRTOS de Header Files.                                          *
  ******************************************************************************/
 
@@ -85,18 +99,13 @@ void blinkLED(void *p_param) {
 }
 
 void checkUSB(void *p_param) {
-    // CREAR SEMAFORO QUE ARRANQUE EN 1 
     for (;;) {
-        //xSemaphoreTake(mutex,portMAX_DELAY);
         if ((USBGetDeviceState() < CONFIGURED_STATE) ||
                 (USBIsDeviceSuspended() == true)) {
-            //xSemaphoreGive(mutex);
             continue;
-        } else if (USBUSARTIsTxTrfReady()) {
-            xSemaphoreGive(semaphore);
         }
-        else{
-            //xSemaphoreGive(mutex);
+        if (USBUSARTIsTxTrfReady()) {
+            xSemaphoreGive(semaphore);
         }
         CDCTxService();
     }
@@ -112,10 +121,6 @@ void userInterface(void *p_param) {
     RTCC_TimeGet(&date);
 
     for (;;) {
-        //        if ((USBGetDeviceState() < CONFIGURED_STATE) ||
-        //                (USBIsDeviceSuspended() == true)) {
-        //            continue;
-        //        } else {
         xSemaphoreTake(semaphore, portMAX_DELAY);
         numBytes = getsUSBUSART(buffer, sizeof (buffer));
 
@@ -132,9 +137,6 @@ void userInterface(void *p_param) {
         // Mandamos el mensaje necesario al buffer, si corresponde.
         putUSBUSART(buffer, numBytes);
         xSemaphoreGive(mutex);
-// HACER UN RELEASE DEL SEMAFORO NUEVO PARA QUE PUEDA SER USADO DE NUEVO POR checkUSB
-        //        }
-        //        CDCTxService();
     }
 }
 
