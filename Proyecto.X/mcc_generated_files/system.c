@@ -13,11 +13,11 @@
   @Description:
     This header file provides implementations for driver APIs for all modules selected in the GUI.
     Generation Information :
-        Product Revision  :  PIC24 / dsPIC33 / PIC32MM MCUs - 1.170.0
+        Product Revision  :  PIC24 / dsPIC33 / PIC32MM MCUs - 1.167.0
         Device            :  PIC32MM0256GPM064
     The generated drivers are tested against the following:
-        Compiler          :  XC16 v1.61
-        MPLAB             :  MPLAB X v5.45
+        Compiler          :  XC16 v1.50
+        MPLAB             :  MPLAB X v5.35
 */
 
 /*
@@ -48,7 +48,7 @@
 #pragma config SOSCHP = OFF    //Secondary Oscillator High Power Enable bit->SOSC oprerates in normal power mode.
 #pragma config ALTI2C = OFF    //Alternate I2C1 Pins Location Enable bit->Primary I2C1 pins are used
 #pragma config FUSBIDIO = OFF    //USBID pin control->USBID pin is controlled by the USB module
-#pragma config FVBUSIO = ON    //VBUS Pin Control->VBUS pin is controlled by port function
+#pragma config FVBUSIO = OFF    //VBUS Pin Control->VBUS pin is controlled by the USB module
 
 // FICD
 #pragma config JTAGEN = OFF    //JTAG Enable bit->JTAG is disabled
@@ -85,7 +85,9 @@
 #include "system.h"
 #include "interrupt_manager.h"
 #include "exceptions.h"
+#include "adc1.h"
 #include "usb/usb.h"
+#include "rtcc.h"
 #include "spi1.h"
 
 void SYSTEM_Initialize(void)
@@ -96,6 +98,8 @@ void SYSTEM_Initialize(void)
     USBDeviceInit();
     USBDeviceAttach();
     SPI1_Initialize();
+    ADC1_Initialize();
+    RTCC_Initialize();
     INTERRUPT_GlobalEnable();
 }
 

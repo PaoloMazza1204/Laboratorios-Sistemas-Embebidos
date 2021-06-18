@@ -143,7 +143,7 @@ bool ACCEL_init( void )
             return false;
         }
         #ifdef DEBUG_ACCEL
-        //DEBUG_print("WHO AM I correcto\n");
+        //DEBUG_print("WHO AM I corecto\n");
         #endif
     }
     else

@@ -14,11 +14,11 @@
   @Description
     This header file provides APIs for driver for SPI1.
     Generation Information :
-        Product Revision  :  PIC24 / dsPIC33 / PIC32MM MCUs - 1.170.0
+        Product Revision  :  PIC24 / dsPIC33 / PIC32MM MCUs - 1.167.0
         Device            :  PIC32MM0256GPM064
     The generated drivers are tested against the following:
-        Compiler          :  XC32 v2.50
-        MPLAB             :  MPLAB X v5.45
+        Compiler          :  XC32 v2.40
+        MPLAB             :  MPLAB X v5.35
 */
 
 /*
