@@ -7,14 +7,17 @@
 #include "freeRTOS/include/task.h"
 
 #include <stdio.h>
+#include <stdint.h>
 #include "mcc_generated_files/usb/usb_device_cdc.h"
 #include "mcc_generated_files/system.h"
 #include "mcc_generated_files/pin_manager.h"
 #include "platform/date.h"
 #include "freeRTOS/include/semphr.h"
+#include "framework/Analog/Analog.h"
+#include "platform/WS2812.h"
 
 // tasks
-//void blinkLED(void *p_param);
+void update_LEDs(void *p_param);
 
 //SemaphoreHandle_t semaphore;
 //SemaphoreHandle_t mutex;
@@ -22,15 +25,36 @@
 /*
                          Main application
  */
+
+
+//void ANALOG_RESULT(void *p_param) {
+//    uint8_t buffer[64];
+//    uint8_t numBytes;
+//    while (1) {
+//        uint16_t result = ANALOG_getResult();
+//        if ((USBGetDeviceState() < CONFIGURED_STATE) ||
+//                (USBIsDeviceSuspended() == true)) {
+//            continue;
+//        }
+//        if (USBUSARTIsTxTrfReady()) {
+//            numBytes = sprintf(buffer, "Resultado %d", result);
+//            putUSBUSART(buffer, numBytes);
+//        }
+//        CDCTxService();
+//        vTaskDelay(pdMS_TO_TICKS(1000));
+//    }
+//}
+
 int main(void) {
     // initialize the device
     SYSTEM_Initialize();
-//    semaphore = xSemaphoreCreateBinary();
-//    mutex = xSemaphoreCreateMutex();
+    //    semaphore = xSemaphoreCreateBinary();
+    //    mutex = xSemaphoreCreateMutex();
 
     /* Create the tasks defined within this file. */
-    //xTaskCreate(blinkLED, "task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    
+    //xTaskCreate(ANALOG_convert, "ANALOG", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+
     /* Finally start the scheduler. */
     vTaskStartScheduler();
 
@@ -40,6 +64,25 @@ int main(void) {
     to be created.  See the memory management section on the FreeRTOS web site
     for more details. */
     for (;;);
+}
+
+void update_LEDs(void *p_param) {
+    ws2812_t color;
+    while (1) {
+        update_car_state(&color);
+        if (color.r == 255) {
+            uint8_t i;
+            for (i = 0; i < 3; i++) {
+                update_LEDs_array(color);
+                vTaskDelay(pdMS_TO_TICKS(166));
+                update_LEDs_array(BLACK);
+                vTaskDelay(pdMS_TO_TICKS(166));
+            }
+        }
+        else{
+            update_LEDs_array(GREEN);
+        }
+    }
 }
 
 void vApplicationMallocFailedHook(void) {

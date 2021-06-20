@@ -57,6 +57,7 @@
         <itemPath>platform/date.h</itemPath>
         <itemPath>platform/led_RGB.h</itemPath>
         <itemPath>platform/WS2812.h</itemPath>
+        <itemPath>platform/car_state.h</itemPath>
       </logicalFolder>
       <itemPath>FreeRTOSConfig.h</itemPath>
     </logicalFolder>
@@ -114,6 +115,7 @@
         <itemPath>platform/date.c</itemPath>
         <itemPath>platform/led_RGB.c</itemPath>
         <itemPath>platform/WS2812.c</itemPath>
+        <itemPath>platform/car_state.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
     </logicalFolder>

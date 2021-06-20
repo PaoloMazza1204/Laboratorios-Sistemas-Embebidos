@@ -10,7 +10,7 @@
 /* ************************************************************************** */
 app_register_t app_register;
 ws2812_t leds_RGB[8]; // Vector con el color actual de los leds.
-ws2812_t colors_RGB[5]; // Vector con los posibles colores de un led.
+ws2812_t colors_RGB[6]; // Vector con los posibles colores de un led.
 
 /* Mapeo de los leds RGB para la placa. */
 uint8_t map_led_RGB(uint8_t led) {
@@ -68,6 +68,7 @@ void initialize_leds_RGB() {
     colors_RGB[2] = BLUE;
     colors_RGB[3] = GREEN;
     colors_RGB[4] = BLACK;
+    colors_RGB[5] = YELLOW;
 }
 
 /* Inicializa app_register. */
@@ -109,4 +110,12 @@ void set_last_color(uint8_t color) {
 /* Establece el tiempo del app_register. */
 void set_last_time(uint32_t time) {
     app_register.time = time;
+}
+
+void update_LEDs_array(ws2812_t color){
+    uint8_t i;
+    for(i = 0; i < 8; i++){
+        leds_RGB[i] = color;
+    }
+    WS2812_send(leds_RGB, 8);
 }
