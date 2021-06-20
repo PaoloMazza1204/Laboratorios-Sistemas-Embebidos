@@ -4,14 +4,14 @@
     <memory name="program">                 
       <units>bytes</units>                 
       <length>263312</length>                 
-      <used>68704</used>                     
-      <free>194608</free>                     
+      <used>69148</used>                     
+      <free>194164</free>                     
     </memory>                              
     <memory name="data">              
       <units>bytes</units>                 
       <length>32768</length>                 
-      <used>23412</used>                     
-      <free>9356</free>                     
+      <used>23424</used>                     
+      <free>9344</free>                     
     </memory>                              
   </executable>                            
 </project>                                 

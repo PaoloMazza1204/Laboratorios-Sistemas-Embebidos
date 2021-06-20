@@ -15,6 +15,7 @@
 #include "freeRTOS/include/semphr.h"
 #include "framework/Analog/Analog.h"
 #include "platform/WS2812.h"
+#include "framework/Accelerometer/Accelerometer.h"
 
 // tasks
 void update_LEDs(void *p_param);
@@ -48,6 +49,7 @@ void update_LEDs(void *p_param);
 int main(void) {
     // initialize the device
     SYSTEM_Initialize();
+    while(!ACCEL_init());
     //    semaphore = xSemaphoreCreateBinary();
     //    mutex = xSemaphoreCreateMutex();
 
@@ -68,8 +70,10 @@ int main(void) {
 
 void update_LEDs(void *p_param) {
     ws2812_t color;
+    float threshold_abrupt;
+    float threshold_crash;
     while (1) {
-        update_car_state(&color);
+        update_car_state(&color, &threshold_abrupt, &threshold_crash);
         if (color.r == 255) {
             uint8_t i;
             for (i = 0; i < 3; i++) {

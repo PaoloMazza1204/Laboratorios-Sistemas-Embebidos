@@ -19,6 +19,7 @@
 #define _CAR_STATE_H
 
 #include "WS2812.h"
+#include "../framework/Accelerometer/Accelerometer.h"
 
 typedef enum{
     OK,
@@ -26,7 +27,7 @@ typedef enum{
     CRASH
 }CAR_STATE;
 
-void update_car_state(ws2812_t* color);
+void update_car_state(ws2812_t* color, float* threshold_abrupt, float* threshold_crash);
 
 
 #endif /* _CAR_STATE_H */
