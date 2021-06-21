@@ -46,6 +46,31 @@ void update_LEDs(void *p_param);
 //    }
 //}
 
+/****VER EN EL ACCELERÓMETRO LIS3DH LOS EJES, EL Z ES NUESTRO Y?****/
+// Precondición: Seba dejame quieta la placa y ponele un nivel arriba.
+void accelerometer_test(void *p_param) {
+    uint8_t buffer[64];
+    uint8_t numBytes;
+    Accel_t accel;
+    uint8_t i = 1;
+    while (1) {
+        if ((USBGetDeviceState() < CONFIGURED_STATE) ||
+                (USBIsDeviceSuspended() == true)) {
+            continue;
+        }
+        if (USBUSARTIsTxTrfReady()) {
+            if (ACCEL_GetAccel(&accel)) {
+                
+                numBytes = sprintf(buffer, "\nMedida %d:\nX:%f\nY:%f\nZ:%f\n", i++, accel.Accel_X,
+                        accel.Accel_Y, accel.Accel_Z);
+                putUSBUSART(buffer, numBytes);
+            }
+        }
+        CDCTxService();
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
 int main(void) {
     // initialize the device
     SYSTEM_Initialize();
@@ -55,7 +80,8 @@ int main(void) {
 
     /* Create the tasks defined within this file. */
     //xTaskCreate(ANALOG_convert, "ANALOG", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    //xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(accelerometer_test, "acceltst", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 
     /* Finally start the scheduler. */
     vTaskStartScheduler();
