@@ -48,6 +48,8 @@ void update_LEDs(void *p_param);
 
 /****VER EN EL ACCELERÓMETRO LIS3DH LOS EJES, EL Z ES NUESTRO Y?****/
 // Precondición: Seba dejame quieta la placa y ponele un nivel arriba.
+// NOTA: Si mide 1 en una dirección cuando está quieto hay que cambiar la lógica
+// del get_state_color().
 void accelerometer_test(void *p_param) {
     uint8_t buffer[64];
     uint8_t numBytes;
@@ -99,7 +101,7 @@ void update_LEDs(void *p_param) {
     float threshold_abrupt;
     float threshold_crash;
     while (1) {
-        update_car_state(&color, &threshold_abrupt, &threshold_crash);
+        get_state_color(&color, &threshold_abrupt, &threshold_crash);
         if (color.r == 255) {
             uint8_t i;
             for (i = 0; i < 3; i++) {

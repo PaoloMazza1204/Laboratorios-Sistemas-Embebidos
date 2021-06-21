@@ -21,7 +21,7 @@
 CAR_STATE car_state = OK;
 Accel_t accel;
 
-void update_car_state(ws2812_t* color, float* threshold_abrupt, float* threshold_crash){
+void get_state_color(ws2812_t* color, float* threshold_abrupt, float* threshold_crash){
     // revisar acelerometro y actualizar segun umbral
     if(ACCEL_GetAccel(&accel)){
         if(accel.Accel_X < *threshold_abrupt && accel.Accel_Y < *threshold_abrupt && 

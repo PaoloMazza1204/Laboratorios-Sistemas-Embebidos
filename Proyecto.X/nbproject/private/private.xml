@@ -3,15 +3,8 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/main.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/platform/LIS3DH/LIS3DH.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/framework/Analog/Analog.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/mcc_generated_files/adc1.h</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/framework/Accelerometer/Accelerometer.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/framework/Analog/Analog.h</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/mcc_generated_files/adc1.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/platform/LIS3DH/LIS3DH.h</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/framework/Accelerometer/Accelerometer.h</file>
+            <file>file:/C:/Users/FIT/Desktop/Tercer%20Año/Sistemas%20embedidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/main.c</file>
+            <file>file:/C:/Users/FIT/Desktop/Tercer%20Año/Sistemas%20embedidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/platform/car_state.c</file>
         </group>
     </open-files>
 </project-private>
