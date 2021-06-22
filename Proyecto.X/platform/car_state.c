@@ -17,6 +17,7 @@
 #include "car_state.h"
 #include "WS2812.h"
 #include <stdbool.h>
+#include <math.h>
 
 CAR_STATE car_state = OK;
 Accel_t accel;
@@ -24,12 +25,12 @@ Accel_t accel;
 void get_state_color(ws2812_t* color, float* threshold_abrupt, float* threshold_crash){
     // revisar acelerometro y actualizar segun umbral
     if(ACCEL_GetAccel(&accel)){
-        if(accel.Accel_X < *threshold_abrupt && accel.Accel_Y < *threshold_abrupt && 
-                accel.Accel_Z < *threshold_abrupt){
+        if(fabs(accel.Accel_X) < *threshold_abrupt && fabs(accel.Accel_Y) < *threshold_abrupt && 
+                fabs(accel.Accel_Z - 1.0) < *threshold_abrupt){
             *color = GREEN;
         }
-        else if(accel.Accel_X < *threshold_crash && accel.Accel_Y < *threshold_crash && 
-                accel.Accel_Z < *threshold_crash){
+        else if(fabs(accel.Accel_X) < *threshold_crash && fabs(accel.Accel_Y) < *threshold_crash && 
+                fabs(accel.Accel_Z - 1.0) < *threshold_crash){
             *color = YELLOW;
         }
         else{

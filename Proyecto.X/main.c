@@ -17,16 +17,31 @@
 #include "platform/WS2812.h"
 #include "framework/Accelerometer/Accelerometer.h"
 
+#define THRESHOLD_ABRUPT 1.0f 
+#define THRESHOLD_CRASH 1.5f
 // tasks
 void update_LEDs(void *p_param);
+void config_ACCEL(void *p_param);
 
-//SemaphoreHandle_t semaphore;
+// semaforos
+SemaphoreHandle_t semaphore_ACCEL;
 //SemaphoreHandle_t mutex;
 
 /*
                          Main application
  */
 
+
+//void delay_CDCTxService(void *p_param){
+//    while (1) {
+//        if ((USBGetDeviceState() < CONFIGURED_STATE) ||
+//                (USBIsDeviceSuspended() == true)) {
+//            continue;
+//        }
+//        CDCTxService();
+//        vTaskDelay(pdMS_TO_TICKS(100));
+//    }
+//}
 
 //void ANALOG_RESULT(void *p_param) {
 //    uint8_t buffer[64];
@@ -46,45 +61,18 @@ void update_LEDs(void *p_param);
 //    }
 //}
 
-/****VER EN EL ACCELERÓMETRO LIS3DH LOS EJES, EL Z ES NUESTRO Y?****/
-// Precondición: Seba dejame quieta la placa y ponele un nivel arriba.
-// NOTA: Si mide 1 en una dirección cuando está quieto hay que cambiar la lógica
-// del get_state_color().
-void accelerometer_test(void *p_param) {
-    uint8_t buffer[64];
-    uint8_t numBytes;
-    Accel_t accel;
-    uint8_t i = 1;
-    while (1) {
-        if ((USBGetDeviceState() < CONFIGURED_STATE) ||
-                (USBIsDeviceSuspended() == true)) {
-            continue;
-        }
-        if (USBUSARTIsTxTrfReady()) {
-            if (ACCEL_GetAccel(&accel)) {
-                
-                numBytes = sprintf(buffer, "\nMedida %d:\nX:%f\nY:%f\nZ:%f\n", i++, accel.Accel_X,
-                        accel.Accel_Y, accel.Accel_Z);
-                putUSBUSART(buffer, numBytes);
-            }
-        }
-        CDCTxService();
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-}
-
 int main(void) {
     // initialize the device
     SYSTEM_Initialize();
-    while(!ACCEL_init());
-    //    semaphore = xSemaphoreCreateBinary();
+    semaphore_ACCEL = xSemaphoreCreateBinary();
     //    mutex = xSemaphoreCreateMutex();
 
     /* Create the tasks defined within this file. */
-    //xTaskCreate(ANALOG_convert, "ANALOG", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    //xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(accelerometer_test, "acceltst", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-
+    //xTaskCreate(ANALOG_RESULT, "ANALOG", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    //xTaskCreate(ANALOG_convert, "Convert", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    //xTaskCreate(config_ACCEL, "ACCEL", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+    //xTaskCreate(delay_CDCTxService, "delay", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     /* Finally start the scheduler. */
     vTaskStartScheduler();
 
@@ -96,12 +84,21 @@ int main(void) {
     for (;;);
 }
 
+void config_ACCEL(void *p_param) {
+    while (!ACCEL_init()) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    xSemaphoreGive(semaphore_ACCEL);
+}
+
 void update_LEDs(void *p_param) {
     ws2812_t color;
-    float threshold_abrupt;
-    float threshold_crash;
+    float threshold_abrupt = THRESHOLD_ABRUPT;
+    float threshold_crash = THRESHOLD_CRASH;
     while (1) {
+        //xSemaphoreTake(semaphore_ACCEL, portMAX_DELAY);
         get_state_color(&color, &threshold_abrupt, &threshold_crash);
+        //xSemaphoreGive(semaphore_ACCEL);
         if (color.r == 255) {
             uint8_t i;
             for (i = 0; i < 3; i++) {
@@ -110,8 +107,7 @@ void update_LEDs(void *p_param) {
                 update_LEDs_array(BLACK);
                 vTaskDelay(pdMS_TO_TICKS(166));
             }
-        }
-        else{
+        } else {
             update_LEDs_array(GREEN);
         }
     }
