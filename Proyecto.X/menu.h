@@ -15,21 +15,18 @@
  */
 /* ************************************************************************** */
 
-#ifndef _CAR_STATE_H    /* Guard against multiple inclusion */
-#define _CAR_STATE_H
+#ifndef _MENU_H    /* Guard against multiple inclusion */
+#define _MENU_H
 
 #include <stdint.h>
-#include <stdbool.h>
-#include <math.h>
-#include "WS2812.h"
-#include "../framework/Analog/Analog.h"
-#include "../framework/Accelerometer/Accelerometer.h"
+#include "freeRTOS/include/FreeRTOS.h"
+#include "freeRTOS/include/semphr.h"
 
-void get_state_color(ws2812_t* color, float* threshold_abrupt, float* threshold_crash);
+void initialize_USB_semaphore();
+void give_USB_semaphore();
+void display_options();
 
-uint8_t adc_to_LEDs ();
-
-#endif /* _CAR_STATE_H */
+#endif /* _MENU_H */
 
 /* *****************************************************************************
  End of File

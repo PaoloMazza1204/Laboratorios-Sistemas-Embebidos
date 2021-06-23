@@ -16,15 +16,21 @@
 #include "framework/Analog/Analog.h"
 #include "platform/WS2812.h"
 #include "framework/Accelerometer/Accelerometer.h"
+#include "framework/Button/Button.h"
+#include "menu.h"
 
-#define THRESHOLD_ABRUPT 1.0f 
-#define THRESHOLD_CRASH 1.5f
+#define THRESHOLD_ABRUPT 1.5f 
+#define THRESHOLD_CRASH 2.5f
 // tasks
 void update_LEDs(void *p_param);
 void config_ACCEL(void *p_param);
+void analog_result(void *p_param);
+void button_check(void *p_param);
+void check_USB(void *p_param);
 
 // semaforos
 SemaphoreHandle_t semaphore_ACCEL;
+SemaphoreHandle_t semaphore_config_adc;
 //SemaphoreHandle_t mutex;
 
 /*
@@ -43,33 +49,22 @@ SemaphoreHandle_t semaphore_ACCEL;
 //    }
 //}
 
-//void ANALOG_RESULT(void *p_param) {
-//    uint8_t buffer[64];
-//    uint8_t numBytes;
-//    while (1) {
-//        uint16_t result = ANALOG_getResult();
-//        if ((USBGetDeviceState() < CONFIGURED_STATE) ||
-//                (USBIsDeviceSuspended() == true)) {
-//            continue;
-//        }
-//        if (USBUSARTIsTxTrfReady()) {
-//            numBytes = sprintf(buffer, "Resultado %d", result);
-//            putUSBUSART(buffer, numBytes);
-//        }
-//        CDCTxService();
-//        vTaskDelay(pdMS_TO_TICKS(1000));
-//    }
-//}
-
 int main(void) {
     // initialize the device
     SYSTEM_Initialize();
+    initialize_button_semaphore();
     semaphore_ACCEL = xSemaphoreCreateBinary();
+    semaphore_config_adc = xSemaphoreCreateBinary();
+    initialize_USB_semaphore();
     //    mutex = xSemaphoreCreateMutex();
+    while (!ACCEL_init());
 
     /* Create the tasks defined within this file. */
     //xTaskCreate(ANALOG_RESULT, "ANALOG", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     //xTaskCreate(ANALOG_convert, "Convert", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    //xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 5, NULL);
+    xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 5, NULL);
+    xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     //xTaskCreate(config_ACCEL, "ACCEL", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     //xTaskCreate(delay_CDCTxService, "delay", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
@@ -95,21 +90,53 @@ void update_LEDs(void *p_param) {
     ws2812_t color;
     float threshold_abrupt = THRESHOLD_ABRUPT;
     float threshold_crash = THRESHOLD_CRASH;
-    while (1) {
+    for (;;) {
         //xSemaphoreTake(semaphore_ACCEL, portMAX_DELAY);
         get_state_color(&color, &threshold_abrupt, &threshold_crash);
         //xSemaphoreGive(semaphore_ACCEL);
         if (color.r == 255) {
             uint8_t i;
             for (i = 0; i < 3; i++) {
-                update_LEDs_array(color);
+                update_LEDs_array(color, 8);
                 vTaskDelay(pdMS_TO_TICKS(166));
-                update_LEDs_array(BLACK);
+                update_LEDs_array(BLACK, 8);
                 vTaskDelay(pdMS_TO_TICKS(166));
             }
         } else {
-            update_LEDs_array(GREEN);
+            update_LEDs_array(GREEN, 8);
         }
+    }
+}
+
+void analog_result(void *p_param) {
+    for (;;) {
+        xSemaphoreTake(semaphore_config_adc, portMAX_DELAY);
+        uint8_t leds = adc_to_LEDs();
+        update_LEDs_array(BLUE, leds);
+        // cambiar umbrales + 0.2*leds
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
+
+void check_USB(void *p_param) {
+    for (;;) {
+        if ((USBGetDeviceState() < CONFIGURED_STATE) ||
+                (USBIsDeviceSuspended() == true)) {
+            continue;
+        }
+        if (USBUSARTIsTxTrfReady()) {
+            give_USB_semaphore();
+        }
+        CDCTxService();
+    }
+}
+
+void button_check(void *p_param) {
+    for (;;) {
+        // este semaforo se habilita cuando ocuure una interrupcion 
+        // al apretar el boton.
+        take_button_semaphore();
+        display_options();
     }
 }
 

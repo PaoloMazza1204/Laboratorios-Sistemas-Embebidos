@@ -112,10 +112,15 @@ void set_last_time(uint32_t time) {
     app_register.time = time;
 }
 
-void update_LEDs_array(ws2812_t color){
+void update_LEDs_array(ws2812_t color, uint8_t leds) {
     uint8_t i;
-    for(i = 0; i < 8; i++){
-        leds_RGB[i] = color;
+    for (i = 0; i < 8; i++) {
+        if (i < leds) {
+            leds_RGB[i] = color;
+        }
+        else{
+            leds_RGB[i] = BLACK;
+        }
     }
     WS2812_send(leds_RGB, 8);
 }

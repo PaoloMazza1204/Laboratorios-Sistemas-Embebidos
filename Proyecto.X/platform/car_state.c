@@ -15,11 +15,7 @@
  */
 /* ************************************************************************** */
 #include "car_state.h"
-#include "WS2812.h"
-#include <stdbool.h>
-#include <math.h>
 
-CAR_STATE car_state = OK;
 Accel_t accel;
 
 void get_state_color(ws2812_t* color, float* threshold_abrupt, float* threshold_crash){
@@ -37,6 +33,11 @@ void get_state_color(ws2812_t* color, float* threshold_abrupt, float* threshold_
            *color = RED;
         }
     }
+}
+
+uint8_t adc_to_LEDs(){
+    uint16_t result = ANALOG_getResult();
+    return (result/128)+1;
 }
 
 /* *****************************************************************************

@@ -5,7 +5,7 @@
     Company Name
 
   @File Name
-    filename.h
+    filename.c
 
   @Summary
     Brief description of the file.
@@ -15,21 +15,23 @@
  */
 /* ************************************************************************** */
 
-#ifndef _CAR_STATE_H    /* Guard against multiple inclusion */
-#define _CAR_STATE_H
+#include "Button.h"
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <math.h>
-#include "WS2812.h"
-#include "../framework/Analog/Analog.h"
-#include "../framework/Accelerometer/Accelerometer.h"
+SemaphoreHandle_t semaphore_button;
 
-void get_state_color(ws2812_t* color, float* threshold_abrupt, float* threshold_crash);
+void initialize_button_semaphore(){
+    semaphore_button = xSemaphoreCreateBinary();
+}
 
-uint8_t adc_to_LEDs ();
+void give_button_semaphore(){
+    BaseType_t xHigherPriorityTaskWoken;
+    xHigherPriorityTaskWoken = pdFALSE;
+    xSemaphoreGiveFromISR(semaphore_button, &xHigherPriorityTaskWoken);
+}
 
-#endif /* _CAR_STATE_H */
+void take_button_semaphore(){
+    xSemaphoreTake(semaphore_button, portMAX_DELAY);
+}
 
 /* *****************************************************************************
  End of File

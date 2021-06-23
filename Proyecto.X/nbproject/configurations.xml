@@ -13,6 +13,9 @@
         <logicalFolder name="Analog" displayName="Analog" projectFiles="true">
           <itemPath>framework/Analog/Analog.h</itemPath>
         </logicalFolder>
+        <logicalFolder name="Button" displayName="Button" projectFiles="true">
+          <itemPath>framework/Button/Button.h</itemPath>
+        </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f1" displayName="freeRTOS" projectFiles="true">
         <itemPath>freeRTOS/include/FreeRTOS.h</itemPath>
@@ -53,11 +56,13 @@
       </logicalFolder>
       <logicalFolder name="platform" displayName="platform" projectFiles="true">
         <logicalFolder name="LIS3DH" displayName="LIS3DH" projectFiles="true">
+          <itemPath>platform/LIS3DH/LIS3DH.h</itemPath>
         </logicalFolder>
         <itemPath>platform/date.h</itemPath>
         <itemPath>platform/led_RGB.h</itemPath>
         <itemPath>platform/WS2812.h</itemPath>
         <itemPath>platform/car_state.h</itemPath>
+        <itemPath>menu.h</itemPath>
       </logicalFolder>
       <itemPath>FreeRTOSConfig.h</itemPath>
     </logicalFolder>
@@ -76,6 +81,9 @@
         </logicalFolder>
         <logicalFolder name="Analog" displayName="Analog" projectFiles="true">
           <itemPath>framework/Analog/Analog.c</itemPath>
+        </logicalFolder>
+        <logicalFolder name="Button" displayName="Button" projectFiles="true">
+          <itemPath>framework/Button/Button.c</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f1" displayName="freeRTOS" projectFiles="true">
@@ -116,6 +124,7 @@
         <itemPath>platform/led_RGB.c</itemPath>
         <itemPath>platform/WS2812.c</itemPath>
         <itemPath>platform/car_state.c</itemPath>
+        <itemPath>menu.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
     </logicalFolder>

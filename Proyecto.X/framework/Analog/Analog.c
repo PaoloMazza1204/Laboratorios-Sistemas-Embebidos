@@ -141,10 +141,8 @@ void ANALOG_convert( void *p_param )
     while(1)
     {
         ADC1_ChannelSelect(channel_POT);
-        //ADC1_Start();
         ADC1_SoftwareTriggerEnable();
         vTaskDelay(pdMS_TO_TICKS(5));
-        //ADC1_Stop();
         ADC1_SoftwareTriggerDisable();
         while( !ADC1_IsConversionComplete() )
         {
