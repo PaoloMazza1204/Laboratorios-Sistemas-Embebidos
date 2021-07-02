@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "WS2812.h"
+
 // *****************************************************************************
 // Section: Data Types
 // *****************************************************************************
@@ -39,5 +41,7 @@ void set_last_led(uint8_t led);
 void set_last_color(uint8_t color);
 
 void set_last_time(uint32_t time);
+
+bool compare_colors(ws2812_t color1, ws2812_t color2);
 
 #endif /* _LED_RGB_H */

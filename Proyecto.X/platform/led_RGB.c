@@ -124,3 +124,7 @@ void update_LEDs_array(ws2812_t color, uint8_t leds) {
     }
     WS2812_send(leds_RGB, 8);
 }
+
+bool compare_colors(ws2812_t color1, ws2812_t color2){
+    return(color1.r == color2.r && color1.g == color2.g && color1.b == color2.b);
+}

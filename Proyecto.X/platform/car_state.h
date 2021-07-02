@@ -25,7 +25,7 @@
 #include "../framework/Analog/Analog.h"
 #include "../framework/Accelerometer/Accelerometer.h"
 
-void get_state_color(ws2812_t* color, float* threshold_abrupt, float* threshold_crash);
+uint8_t get_state_color(float* threshold_abrupt, float* threshold_crash);
 
 uint8_t adc_to_LEDs ();
 

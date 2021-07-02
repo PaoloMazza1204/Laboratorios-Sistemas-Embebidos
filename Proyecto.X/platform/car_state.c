@@ -18,19 +18,19 @@
 
 Accel_t accel;
 
-void get_state_color(ws2812_t* color, float* threshold_abrupt, float* threshold_crash){
+uint8_t get_state_color(float* threshold_abrupt, float* threshold_crash){
     // revisar acelerometro y actualizar segun umbral
     if(ACCEL_GetAccel(&accel)){
         if(fabs(accel.Accel_X) < *threshold_abrupt && fabs(accel.Accel_Y) < *threshold_abrupt && 
                 fabs(accel.Accel_Z - 1.0) < *threshold_abrupt){
-            *color = GREEN;
+            return 0;
         }
         else if(fabs(accel.Accel_X) < *threshold_crash && fabs(accel.Accel_Y) < *threshold_crash && 
                 fabs(accel.Accel_Z - 1.0) < *threshold_crash){
-            *color = YELLOW;
+            return 1;
         }
         else{
-           *color = RED;
+            return 2;
         }
     }
 }

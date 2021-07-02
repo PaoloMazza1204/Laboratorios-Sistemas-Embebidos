@@ -2,7 +2,8 @@
   Section: Included Files
  */
 /* TO-DO:
- * 
+ * Hacer los logs
+ * Hacer el extra (colores)
  * 
  */
 /* Kernel includes. */
@@ -21,8 +22,14 @@
 #include "framework/Accelerometer/Accelerometer.h"
 #include "framework/Button/Button.h"
 #include "menu.h"
+#include "platform/led_RGB.h"
 
-#define INITIAL_THRESHOLD 1.5f 
+#define DEFAULT_THRESHOLD 1.5f
+#define DEFAULT_LOG_TIME 10
+#define DEFAULT_COLOR_OK GREEN
+#define DEFAULT_COLOR_ABRUPT YELLOW
+#define DEFAULT_COLOR_CRASH RED
+#define DEFAULT_COLOR_THRESHOLD BLUE
 
 // tasks
 void update_LEDs(void *p_param);
@@ -30,16 +37,25 @@ void config_ACCEL(void *p_param);
 void analog_result(void *p_param);
 void button_check(void *p_param);
 void check_USB(void *p_param);
+void log_update(void *p_param);
+void enable_log_update(void *p_param);
 
 // semaforos
 SemaphoreHandle_t semaphore_ACCEL;
 SemaphoreHandle_t semaphore_config_adc;
 SemaphoreHandle_t semaphore_USB;
+SemaphoreHandle_t semaphore_log;
 //SemaphoreHandle_t mutex;
 
-float threshold_abrupt = INITIAL_THRESHOLD;
-float threshold_crash = INITIAL_THRESHOLD;
-uint8_t threshold_to_change;
+float threshold_abrupt = DEFAULT_THRESHOLD;
+float threshold_crash = DEFAULT_THRESHOLD;
+uint8_t log_time = DEFAULT_LOG_TIME;
+const ws2812_t *color_ok = &DEFAULT_COLOR_OK;
+const ws2812_t *color_abrupt = &DEFAULT_COLOR_ABRUPT;
+const ws2812_t *color_crash = &DEFAULT_COLOR_CRASH;
+const ws2812_t *color_threshold = &DEFAULT_COLOR_THRESHOLD;
+
+uint8_t threshold_to_change; // umbral a configurar
 
 /*
                          Main application
@@ -64,6 +80,7 @@ int main(void) {
     semaphore_ACCEL = xSemaphoreCreateBinary();
     semaphore_config_adc = xSemaphoreCreateBinary();
     semaphore_USB = xSemaphoreCreateBinary();
+    semaphore_log = xSemaphoreCreateBinary();
     //    mutex = xSemaphoreCreateMutex();
     while (!ACCEL_init());
 
@@ -74,6 +91,8 @@ int main(void) {
     xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
     xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(log_update, "log", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(enable_log_update, "enable", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     //xTaskCreate(config_ACCEL, "ACCEL", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     //xTaskCreate(delay_CDCTxService, "delay", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     /* Finally start the scheduler. */
@@ -96,11 +115,20 @@ void config_ACCEL(void *p_param) {
 
 void update_LEDs(void *p_param) {
     ws2812_t color;
+    ws2812_t last_color = *color_ok;
+    uint8_t color_result;
     for (;;) {
         //xSemaphoreTake(semaphore_ACCEL, portMAX_DELAY);
-        get_state_color(&color, &threshold_abrupt, &threshold_crash);
+        color_result = get_state_color(&threshold_abrupt, &threshold_crash); // modificar esto
+        color = color_result == 0 ? *color_ok : color_result == 1 ? *color_abrupt : *color_crash;
         //xSemaphoreGive(semaphore_ACCEL);
-        if (color.r == 255) {
+        if (compare_colors(color, *color_ok)) {
+            update_LEDs_array(*color_ok, 8);
+        } else {
+            if ((compare_colors(color, *color_abrupt) && compare_colors(last_color, *color_ok)) ||
+                    (compare_colors(color, *color_crash) && (!compare_colors(last_color, *color_crash)))) {
+                xSemaphoreGive(semaphore_log);
+            }
             uint8_t i;
             for (i = 0; i < 3; i++) {
                 update_LEDs_array(color, 8);
@@ -108,9 +136,8 @@ void update_LEDs(void *p_param) {
                 update_LEDs_array(BLACK, 8);
                 vTaskDelay(pdMS_TO_TICKS(166));
             }
-        } else {
-            update_LEDs_array(GREEN, 8);
         }
+        last_color = color;
     }
 }
 
@@ -123,17 +150,17 @@ void analog_result(void *p_param) {
         while (!exit_config_ADC()) {
             uint8_t leds_actual = adc_to_LEDs();
             if (leds_actual != leds) {
-                if (((threshold_to_change == 1) && ((leds_actual - 1) + INITIAL_THRESHOLD <= threshold_crash)) ||
-                        ((threshold_to_change == 2) && ((leds_actual - 1) + INITIAL_THRESHOLD >= threshold_abrupt))) { // brusco)
+                if (((threshold_to_change == 1) && ((leds_actual - 1) + DEFAULT_THRESHOLD <= threshold_crash)) ||
+                        ((threshold_to_change == 2) && ((leds_actual - 1) + DEFAULT_THRESHOLD >= threshold_abrupt))) { // brusco)
                     update_LEDs_array(BLUE, leds_actual);
                     leds = leds_actual;
                 }
             }
         }
         if (threshold_to_change == 1) {
-            threshold_abrupt = INITIAL_THRESHOLD + ((leds - 1));
+            threshold_abrupt = DEFAULT_THRESHOLD + ((leds - 1));
         } else {
-            threshold_crash = INITIAL_THRESHOLD + ((leds - 1));
+            threshold_crash = DEFAULT_THRESHOLD + ((leds - 1));
         }
         vTaskDelete(handle_convert);
     }
@@ -167,6 +194,21 @@ void button_check(void *p_param) {
         } else if (result == 3) {
             //xSemaphoreGive(semaphore_LOG DATOS);
         }
+    }
+}
+
+void log_update(void* p_param) {
+    for (;;) {
+        xSemaphoreTake(semaphore_log, portMAX_DELAY);
+        LEDA_Toggle();
+        // hacer cosas
+    }
+}
+
+void enable_log_update(void* p_param) {
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(log_time * 1000));
+        xSemaphoreGive(semaphore_log);
     }
 }
 
