@@ -3,11 +3,12 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
+            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/menu.h</file>
             <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/main.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/framework/Analog/Analog.c</file>
+            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/menu.c</file>
             <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/framework/Button/Button.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/mcc_generated_files/pin_manager.c</file>
-            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/framework/Button/Button.h</file>
+            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/mcc_generated_files/usb/usb_device_cdc.h</file>
+            <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/platform/car_state.c</file>
             <file>file:/C:/Users/FIT/Desktop/UCU-20200617T154333Z-001/UCU/3er%20año/Sistemas%20embebidos/Laboratorios-Sistemas-Embebidos/Proyecto.X/platform/led_RGB.c</file>
         </group>
     </open-files>

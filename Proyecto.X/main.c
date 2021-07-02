@@ -1,7 +1,8 @@
 /**
   Section: Included Files
  */
-
+/* CAMBIAR UMBRALES POR SEPARADO
+ */
 /* Kernel includes. */
 #include "freeRTOS/include/FreeRTOS.h"
 #include "freeRTOS/include/task.h"
@@ -31,7 +32,11 @@ void check_USB(void *p_param);
 // semaforos
 SemaphoreHandle_t semaphore_ACCEL;
 SemaphoreHandle_t semaphore_config_adc;
+SemaphoreHandle_t semaphore_USB;
 //SemaphoreHandle_t mutex;
+
+float threshold_abrupt = THRESHOLD_ABRUPT;
+float threshold_crash = THRESHOLD_CRASH;
 
 /*
                          Main application
@@ -55,16 +60,16 @@ int main(void) {
     initialize_button_semaphore();
     semaphore_ACCEL = xSemaphoreCreateBinary();
     semaphore_config_adc = xSemaphoreCreateBinary();
-    initialize_USB_semaphore();
+    semaphore_USB = xSemaphoreCreateBinary();
     //    mutex = xSemaphoreCreateMutex();
     while (!ACCEL_init());
 
     /* Create the tasks defined within this file. */
     //xTaskCreate(ANALOG_RESULT, "ANALOG", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     //xTaskCreate(ANALOG_convert, "Convert", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    //xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 5, NULL);
-    xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 5, NULL);
-    xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+    xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
     xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     //xTaskCreate(config_ACCEL, "ACCEL", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     //xTaskCreate(delay_CDCTxService, "delay", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
@@ -88,8 +93,6 @@ void config_ACCEL(void *p_param) {
 
 void update_LEDs(void *p_param) {
     ws2812_t color;
-    float threshold_abrupt = THRESHOLD_ABRUPT;
-    float threshold_crash = THRESHOLD_CRASH;
     for (;;) {
         //xSemaphoreTake(semaphore_ACCEL, portMAX_DELAY);
         get_state_color(&color, &threshold_abrupt, &threshold_crash);
@@ -109,12 +112,21 @@ void update_LEDs(void *p_param) {
 }
 
 void analog_result(void *p_param) {
+    TaskHandle_t handle_convert = NULL;
     for (;;) {
         xSemaphoreTake(semaphore_config_adc, portMAX_DELAY);
-        uint8_t leds = adc_to_LEDs();
-        update_LEDs_array(BLUE, leds);
-        // cambiar umbrales + 0.2*leds
-        vTaskDelay(pdMS_TO_TICKS(10));
+        xTaskCreate(ANALOG_convert, "Convert", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &handle_convert);
+        uint8_t leds = 0;
+        while (!exit_config_ADC()) {
+            uint8_t leds_actual = adc_to_LEDs();
+            if (leds_actual != leds) {
+                update_LEDs_array(BLUE, leds_actual);
+                leds = leds_actual;
+            }
+        }
+        threshold_abrupt = THRESHOLD_ABRUPT + ((leds-1));
+        threshold_crash = THRESHOLD_CRASH + ((leds-1));
+        vTaskDelete(handle_convert);
     }
 }
 
@@ -125,9 +137,10 @@ void check_USB(void *p_param) {
             continue;
         }
         if (USBUSARTIsTxTrfReady()) {
-            give_USB_semaphore();
+            xSemaphoreGive(semaphore_USB);
         }
         CDCTxService();
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
@@ -136,7 +149,14 @@ void button_check(void *p_param) {
         // este semaforo se habilita cuando ocuure una interrupcion 
         // al apretar el boton.
         take_button_semaphore();
-        display_options();
+        // este semaforo se habilita cuando el USB esta configurado.
+        xSemaphoreTake(semaphore_USB, portMAX_DELAY);
+        uint8_t result = user_interface();
+        if (result == 1) {
+            xSemaphoreGive(semaphore_config_adc);
+        } else if (result == 2) {
+            //xSemaphoreGive(semaphore_LOG DATOS);
+        }
     }
 }
 

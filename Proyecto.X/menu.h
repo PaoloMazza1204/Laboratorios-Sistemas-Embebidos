@@ -19,12 +19,13 @@
 #define _MENU_H
 
 #include <stdint.h>
-#include "freeRTOS/include/FreeRTOS.h"
-#include "freeRTOS/include/semphr.h"
+#include "mcc_generated_files/usb/usb_device_cdc.h"
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
 
-void initialize_USB_semaphore();
-void give_USB_semaphore();
-void display_options();
+uint8_t user_interface();
+bool exit_config_ADC();
 
 #endif /* _MENU_H */
 
