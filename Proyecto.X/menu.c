@@ -29,21 +29,38 @@ uint8_t user_interface() {
     //CDCTxService();
     for (;;) {
         numBytes = getsUSBUSART(buffer, sizeof (buffer));
-        if ((numBytes > 0)) {
-            // Si estamos esperando un modo e ingresa un caracter.
-            if ((numBytes == 1) && (buffer[0] == '1')) {
-                //mode = INIT;
-                if (USBUSARTIsTxTrfReady()) {
-                    numBytes = sprintf(buffer, "Ingrese la palabra %s para salir\n", EXIT_CONFIG_ADC);
-                    putUSBUSART(buffer, numBytes);
-                    return 1;
-                }
-            }// Estamos esperando input para una funcionalidad específica.
-            else if (numBytes == 1 && (buffer[0] == '2')) {
-                return 2;
+        // Si estamos esperando un modo e ingresa un caracter.
+        if ((numBytes == 1) && (buffer[0] == '1')) {
+            //mode = INIT;
+            if (USBUSARTIsTxTrfReady()) {
+                //numBytes = sprintf(buffer, "Ingrese la palabra %s para salir\n", EXIT_CONFIG_ADC);
+                numBytes = sprintf(buffer, "Seleccione el umbral\n1-Brusco\n2-Choque");
+                putUSBUSART(buffer, numBytes);
+                return threshold_select();
             }
+        }// Estamos esperando input para una funcionalidad específica.
+        else if (numBytes == 1 && (buffer[0] == '2')) {
+            return 3;
         }
     }
+}
+
+uint8_t threshold_select() {
+    uint8_t threshold;
+    for (;;) {
+        numBytes = getsUSBUSART(buffer, sizeof (buffer));
+        if ((numBytes == 1) && (buffer[0] == '1')) {
+            threshold = 1;
+            break;
+        } else if ((numBytes == 1) && (buffer[0] == '2')) {
+            threshold = 2;
+            break;
+        }
+    }
+    while(!USBUSARTIsTxTrfReady());
+    numBytes = sprintf(buffer, "Ingrese la palabra %s para salir\n", EXIT_CONFIG_ADC);
+    putUSBUSART(buffer, numBytes);
+    return threshold;
 }
 
 bool exit_config_ADC() {

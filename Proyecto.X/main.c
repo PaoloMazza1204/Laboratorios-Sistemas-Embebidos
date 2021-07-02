@@ -1,7 +1,9 @@
 /**
   Section: Included Files
  */
-/* CAMBIAR UMBRALES POR SEPARADO
+/* TO-DO:
+ * 
+ * 
  */
 /* Kernel includes. */
 #include "freeRTOS/include/FreeRTOS.h"
@@ -20,8 +22,8 @@
 #include "framework/Button/Button.h"
 #include "menu.h"
 
-#define THRESHOLD_ABRUPT 1.5f 
-#define THRESHOLD_CRASH 2.5f
+#define INITIAL_THRESHOLD 1.5f 
+
 // tasks
 void update_LEDs(void *p_param);
 void config_ACCEL(void *p_param);
@@ -35,8 +37,9 @@ SemaphoreHandle_t semaphore_config_adc;
 SemaphoreHandle_t semaphore_USB;
 //SemaphoreHandle_t mutex;
 
-float threshold_abrupt = THRESHOLD_ABRUPT;
-float threshold_crash = THRESHOLD_CRASH;
+float threshold_abrupt = INITIAL_THRESHOLD;
+float threshold_crash = INITIAL_THRESHOLD;
+uint8_t threshold_to_change;
 
 /*
                          Main application
@@ -120,12 +123,18 @@ void analog_result(void *p_param) {
         while (!exit_config_ADC()) {
             uint8_t leds_actual = adc_to_LEDs();
             if (leds_actual != leds) {
-                update_LEDs_array(BLUE, leds_actual);
-                leds = leds_actual;
+                if (((threshold_to_change == 1) && ((leds_actual - 1) + INITIAL_THRESHOLD <= threshold_crash)) ||
+                        ((threshold_to_change == 2) && ((leds_actual - 1) + INITIAL_THRESHOLD >= threshold_abrupt))) { // brusco)
+                    update_LEDs_array(BLUE, leds_actual);
+                    leds = leds_actual;
+                }
             }
         }
-        threshold_abrupt = THRESHOLD_ABRUPT + ((leds-1));
-        threshold_crash = THRESHOLD_CRASH + ((leds-1));
+        if (threshold_to_change == 1) {
+            threshold_abrupt = INITIAL_THRESHOLD + ((leds - 1));
+        } else {
+            threshold_crash = INITIAL_THRESHOLD + ((leds - 1));
+        }
         vTaskDelete(handle_convert);
     }
 }
@@ -152,9 +161,10 @@ void button_check(void *p_param) {
         // este semaforo se habilita cuando el USB esta configurado.
         xSemaphoreTake(semaphore_USB, portMAX_DELAY);
         uint8_t result = user_interface();
-        if (result == 1) {
+        if (result < 3) {
+            threshold_to_change = result;
             xSemaphoreGive(semaphore_config_adc);
-        } else if (result == 2) {
+        } else if (result == 3) {
             //xSemaphoreGive(semaphore_LOG DATOS);
         }
     }

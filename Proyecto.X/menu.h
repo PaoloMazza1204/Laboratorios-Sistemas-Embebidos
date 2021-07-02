@@ -25,6 +25,7 @@
 #include <string.h>
 
 uint8_t user_interface();
+uint8_t threshold_select();
 bool exit_config_ADC();
 
 #endif /* _MENU_H */
