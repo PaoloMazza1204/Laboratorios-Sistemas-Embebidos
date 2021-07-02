@@ -18,19 +18,19 @@
 
 Accel_t accel;
 
-uint8_t get_state_color(float* threshold_abrupt, float* threshold_crash){
+DRIVE_PATTERN get_state_color(float* threshold_abrupt, float* threshold_crash){
     // revisar acelerometro y actualizar segun umbral
     if(ACCEL_GetAccel(&accel)){
         if(fabs(accel.Accel_X) < *threshold_abrupt && fabs(accel.Accel_Y) < *threshold_abrupt && 
                 fabs(accel.Accel_Z - 1.0) < *threshold_abrupt){
-            return 0;
+            return OK;
         }
         else if(fabs(accel.Accel_X) < *threshold_crash && fabs(accel.Accel_Y) < *threshold_crash && 
                 fabs(accel.Accel_Z - 1.0) < *threshold_crash){
-            return 1;
+            return ABRUPT;
         }
         else{
-            return 2;
+            return CRASH;
         }
     }
 }

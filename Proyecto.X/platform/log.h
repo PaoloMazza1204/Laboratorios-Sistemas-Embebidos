@@ -15,26 +15,20 @@
  */
 /* ************************************************************************** */
 
-#ifndef _CAR_STATE_H    /* Guard against multiple inclusion */
-#define _CAR_STATE_H
+#ifndef _LOG_H    /* Guard against multiple inclusion */
+#define _LOG_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <math.h>
-#include "WS2812.h"
-#include "../framework/Analog/Analog.h"
-#include "../framework/Accelerometer/Accelerometer.h"
+#include <stdio.h>
+#include "car_state.h"
 
-typedef enum {
-    OK,
-    ABRUPT,
-    CRASH
-} DRIVE_PATTERN;
+typedef struct {
+    uint8_t id;
+    DRIVE_PATTERN drive_pattern;
+} log_register_t;
 
-DRIVE_PATTERN get_state_color(float* threshold_abrupt, float* threshold_crash);
-uint8_t adc_to_LEDs();
+void add_register_to_log(DRIVE_PATTERN pattern);
 
-#endif /* _CAR_STATE_H */
+#endif /* _LOG_H */
 
 /* *****************************************************************************
  End of File

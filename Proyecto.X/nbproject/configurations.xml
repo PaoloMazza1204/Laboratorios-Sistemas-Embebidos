@@ -63,6 +63,7 @@
         <itemPath>platform/WS2812.h</itemPath>
         <itemPath>platform/car_state.h</itemPath>
         <itemPath>menu.h</itemPath>
+        <itemPath>platform/log.h</itemPath>
       </logicalFolder>
       <itemPath>FreeRTOSConfig.h</itemPath>
     </logicalFolder>
@@ -125,6 +126,7 @@
         <itemPath>platform/WS2812.c</itemPath>
         <itemPath>platform/car_state.c</itemPath>
         <itemPath>menu.c</itemPath>
+        <itemPath>platform/log.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
     </logicalFolder>

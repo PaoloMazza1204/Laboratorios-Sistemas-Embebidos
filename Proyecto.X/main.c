@@ -2,7 +2,7 @@
   Section: Included Files
  */
 /* TO-DO:
- * Hacer los logs
+ * Hacer los logs (Nos quedamos en log.c)
  * Hacer el extra (colores)
  * 
  */
@@ -23,6 +23,7 @@
 #include "framework/Button/Button.h"
 #include "menu.h"
 #include "platform/led_RGB.h"
+#include "platform/log.h"
 
 #define DEFAULT_THRESHOLD 1.5f
 #define DEFAULT_LOG_TIME 10
@@ -55,6 +56,7 @@ const ws2812_t *color_abrupt = &DEFAULT_COLOR_ABRUPT;
 const ws2812_t *color_crash = &DEFAULT_COLOR_CRASH;
 const ws2812_t *color_threshold = &DEFAULT_COLOR_THRESHOLD;
 
+DRIVE_PATTERN last_pattern = OK;
 uint8_t threshold_to_change; // umbral a configurar
 
 /*
@@ -115,18 +117,17 @@ void config_ACCEL(void *p_param) {
 
 void update_LEDs(void *p_param) {
     ws2812_t color;
-    ws2812_t last_color = *color_ok;
-    uint8_t color_result;
+    DRIVE_PATTERN drive_pattern;
     for (;;) {
         //xSemaphoreTake(semaphore_ACCEL, portMAX_DELAY);
-        color_result = get_state_color(&threshold_abrupt, &threshold_crash); // modificar esto
-        color = color_result == 0 ? *color_ok : color_result == 1 ? *color_abrupt : *color_crash;
+        drive_pattern = get_state_color(&threshold_abrupt, &threshold_crash); // modificar esto
+        color = drive_pattern == OK ? *color_ok : drive_pattern == ABRUPT ? *color_abrupt : *color_crash;
         //xSemaphoreGive(semaphore_ACCEL);
-        if (compare_colors(color, *color_ok)) {
+        if (drive_pattern == OK) {
             update_LEDs_array(*color_ok, 8);
         } else {
-            if ((compare_colors(color, *color_abrupt) && compare_colors(last_color, *color_ok)) ||
-                    (compare_colors(color, *color_crash) && (!compare_colors(last_color, *color_crash)))) {
+            if ((drive_pattern == ABRUPT && last_pattern == OK) ||
+                    (drive_pattern == CRASH && last_pattern != CRASH)) {
                 xSemaphoreGive(semaphore_log);
             }
             uint8_t i;
@@ -137,7 +138,7 @@ void update_LEDs(void *p_param) {
                 vTaskDelay(pdMS_TO_TICKS(166));
             }
         }
-        last_color = color;
+        last_pattern = drive_pattern;
     }
 }
 
@@ -198,6 +199,7 @@ void button_check(void *p_param) {
 }
 
 void log_update(void* p_param) {
+    log_register_t reg;
     for (;;) {
         xSemaphoreTake(semaphore_log, portMAX_DELAY);
         LEDA_Toggle();
