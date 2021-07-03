@@ -17,44 +17,69 @@
 #include "menu.h"
 #include "date.h"
 
-#define EXIT_CONFIG_ADC "Exit"
+#define CANCEL_CONFIG_ADC "Cancelar"
+#define CONFIRM_CONFIG_ADC "Confirmar"
 
 uint8_t buffer[64];
 uint8_t numBytes;
-MENU_MODE mode_menu = START;
+MENU_MODE menu_mode = START;
 
 static void write(SemaphoreHandle_t semaphore_USB);
 
-uint8_t user_interface(SemaphoreHandle_t semaphore_USB) {
-    numBytes = sprintf(buffer, "\n1-Ajustar umbrales\n2-Log de datos");
-    putUSBUSART(buffer, numBytes);
-    uint8_t input;
+void user_interface(SemaphoreHandle_t semaphore_USB) {
+    bool greeting_sent = false;
     for (;;) {
+        if (menu_mode == START && !greeting_sent) {
+            greeting_sent = true;
+            numBytes = sprintf(buffer, "\n1-Ajustar umbrales\n2-Log de datos");
+            putUSBUSART(buffer, numBytes);
+        }
         numBytes = getsUSBUSART(buffer, sizeof (buffer));
-        // Si estamos esperando un modo e ingresa un caracter.
         if ((numBytes == 1) && (buffer[0] == '1')) {
-            xSemaphoreTake(semaphore_USB, portMAX_DELAY);
-            numBytes = sprintf(buffer, "\nSeleccione el umbral\n1-Brusco\n2-Choque");
-            putUSBUSART(buffer, numBytes);
-            input = threshold_select();
-            xSemaphoreTake(semaphore_USB, portMAX_DELAY);
-            numBytes = sprintf(buffer, "\nIngrese la palabra %s para salir", EXIT_CONFIG_ADC);
-            putUSBUSART(buffer, numBytes);
-            return input;
-        }// Estamos esperando input para una funcionalidad específica.
-        else if (numBytes == 1 && (buffer[0] == '2')) {
-            xSemaphoreTake(semaphore_USB, portMAX_DELAY);
-            numBytes = sprintf(buffer, "\n1-Configurar periodo log\n2-Descargar log");
-            putUSBUSART(buffer, numBytes);
-            if (threshold_select() == 1) {
+            if (menu_mode == START) {
+                menu_mode = WAITING_THRESHOLD;
+                xSemaphoreTake(semaphore_USB, portMAX_DELAY);
+                numBytes = sprintf(buffer, "\nSeleccione el umbral\n1-Brusco\n2-Choque");
+                putUSBUSART(buffer, numBytes);
+            } else if (menu_mode == WAITING_THRESHOLD) {
+                menu_mode = THRESHOLD_ABRUPT_CONFIG;
+                xSemaphoreTake(semaphore_USB, portMAX_DELAY);
+                numBytes = sprintf(buffer, "\nIngrese %s o %s", CANCEL_CONFIG_ADC, CONFIRM_CONFIG_ADC);
+                putUSBUSART(buffer, numBytes);
+                return;
+            } else if (menu_mode == WAITING_LOG) {
+                menu_mode = LOG_TIME_CONFIG;
                 xSemaphoreTake(semaphore_USB, portMAX_DELAY);
                 numBytes = sprintf(buffer, "\nIngrese periodo deseado [1-255]");
                 putUSBUSART(buffer, numBytes);
-                return 3;
+                return;
             }
-            return 4;
+        } else if ((numBytes == 1) && (buffer[0] == '2')) {
+            if (menu_mode == START) {
+                menu_mode = WAITING_LOG;
+                xSemaphoreTake(semaphore_USB, portMAX_DELAY);
+                numBytes = sprintf(buffer, "\n1-Configurar periodo log\n2-Descargar log");
+                putUSBUSART(buffer, numBytes);
+            } else if (menu_mode == WAITING_LOG) {
+                menu_mode = DOWNLOAD_LOG;
+                return;
+            } else if (menu_mode == WAITING_THRESHOLD) {
+                menu_mode = THRESHOLD_CRASH_CONFIG;
+                xSemaphoreTake(semaphore_USB, portMAX_DELAY);
+                numBytes = sprintf(buffer, "\nIngrese %s o %s", CANCEL_CONFIG_ADC, CONFIRM_CONFIG_ADC);
+                putUSBUSART(buffer, numBytes);
+                return;
+            }
+        }
+        else if(strncasecmp("cancelar",buffer,strlen("cancelar")) == 0){
+            greeting_sent = false;
+            menu_mode = START;
         }
     }
+}
+
+bool compare_to_menu_mode(MENU_MODE mode) {
+    return mode == menu_mode;
 }
 
 uint8_t get_log_time(SemaphoreHandle_t semaphore_USB) {
@@ -63,6 +88,7 @@ uint8_t get_log_time(SemaphoreHandle_t semaphore_USB) {
         if (numBytes > 0) {
             uint8_t input = atoi(buffer);
             if (input > 0 && input < 256) {
+                reset_menu_mode();
                 return input;
             }
             xSemaphoreTake(semaphore_USB, portMAX_DELAY);
@@ -72,24 +98,14 @@ uint8_t get_log_time(SemaphoreHandle_t semaphore_USB) {
     }
 }
 
-uint8_t threshold_select() {
-    uint8_t threshold;
-    for (;;) {
-        numBytes = getsUSBUSART(buffer, sizeof (buffer));
-        if ((numBytes == 1) && (buffer[0] == '1')) {
-            threshold = 1;
-            break;
-        } else if ((numBytes == 1) && (buffer[0] == '2')) {
-            threshold = 2;
-            break;
-        }
-    }
-    return threshold;
+bool cancel_config_ADC() {
+    getsUSBUSART(buffer, sizeof (buffer));
+    return strncasecmp(buffer, CANCEL_CONFIG_ADC, strlen(CANCEL_CONFIG_ADC)) == 0;
 }
 
-bool exit_config_ADC() {
+bool confirm_config_ADC() {
     getsUSBUSART(buffer, sizeof (buffer));
-    return strncmp(buffer, EXIT_CONFIG_ADC, strlen(EXIT_CONFIG_ADC)) == 0;
+    return strncasecmp(buffer, CONFIRM_CONFIG_ADC, strlen(CONFIRM_CONFIG_ADC)) == 0;
 }
 
 void download_log(SemaphoreHandle_t semaphore_USB) {
@@ -113,6 +129,11 @@ void download_log(SemaphoreHandle_t semaphore_USB) {
         numBytes = sprintf(buffer, "\n%d - %s", log[i].id, patterns[log[i].drive_pattern]);
         putUSBUSART(buffer, numBytes);
     }
+    reset_menu_mode();
+}
+
+void reset_menu_mode() {
+    menu_mode = START;
 }
 
 

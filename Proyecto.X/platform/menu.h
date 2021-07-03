@@ -29,17 +29,21 @@
 
 typedef enum {
     START,
+    WAITING_THRESHOLD,
+    WAITING_LOG,
     THRESHOLD_ABRUPT_CONFIG,
     THRESHOLD_CRASH_CONFIG,
     LOG_TIME_CONFIG,
     DOWNLOAD_LOG
 } MENU_MODE;
 
-uint8_t user_interface(SemaphoreHandle_t semaphore_USB);
-uint8_t threshold_select();
-bool exit_config_ADC();
+void user_interface(SemaphoreHandle_t semaphore_USB);
+bool cancel_config_ADC();
+bool confirm_config_ADC();
 void download_log(SemaphoreHandle_t semaphore_USB);
 uint8_t get_log_time(SemaphoreHandle_t semaphore_USB);
+bool compare_to_menu_mode(MENU_MODE mode);
+void reset_menu_mode();
 
 #endif /* _MENU_H */
 

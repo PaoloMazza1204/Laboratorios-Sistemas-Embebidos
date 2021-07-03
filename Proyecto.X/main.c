@@ -2,8 +2,9 @@
   Section: Included Files
  */
 /* TO-DO:
- * Hacer los logs (Nos quedamos en log.c)
+ * Hacer los logs (GPS)
  * Hacer el extra (colores)
+ * destruir el tridente
  * 
  */
 /* Kernel includes. */
@@ -145,25 +146,30 @@ void update_LEDs(void *p_param) {
 
 void analog_result(void *p_param) {
     TaskHandle_t handle_convert = NULL;
+    bool confirm = false;
     for (;;) {
         xSemaphoreTake(semaphore_config_adc, portMAX_DELAY);
         xTaskCreate(ANALOG_convert, "Convert", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &handle_convert);
         uint8_t leds = 0;
-        while (!exit_config_ADC()) {
+        while (!cancel_config_ADC() && !confirm) {
             uint8_t leds_actual = adc_to_LEDs();
             if (leds_actual != leds) {
-                if (((threshold_to_change == 1) && ((leds_actual - 1) + DEFAULT_THRESHOLD <= threshold_crash)) ||
-                        ((threshold_to_change == 2) && ((leds_actual - 1) + DEFAULT_THRESHOLD >= threshold_abrupt))) { // brusco)
+                if (((compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG)) && ((leds_actual - 1) + DEFAULT_THRESHOLD <= threshold_crash))
+                        || ((compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) && ((leds_actual - 1) + DEFAULT_THRESHOLD >= threshold_abrupt))) {
                     update_LEDs_array(BLUE, leds_actual);
                     leds = leds_actual;
                 }
             }
+            confirm = confirm_config_ADC();
         }
-        if (threshold_to_change == 1) {
-            threshold_abrupt = DEFAULT_THRESHOLD + ((leds - 1));
-        } else {
-            threshold_crash = DEFAULT_THRESHOLD + ((leds - 1));
+        if (confirm) {
+            if (compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG)) {
+                threshold_abrupt = DEFAULT_THRESHOLD + ((leds - 1));
+            } else {
+                threshold_crash = DEFAULT_THRESHOLD + ((leds - 1));
+            }
         }
+        reset_menu_mode();
         vTaskDelete(handle_convert);
     }
 }
@@ -189,13 +195,12 @@ void button_check(void *p_param) {
         take_button_semaphore();
         // este semaforo se habilita cuando el USB esta configurado.
         xSemaphoreTake(semaphore_USB, portMAX_DELAY);
-        uint8_t result = user_interface(semaphore_USB);
-        if (result < 3) {
-            threshold_to_change = result;
+        user_interface(semaphore_USB);
+        if (compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG) || compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) {
             xSemaphoreGive(semaphore_config_adc);
-        } else if (result == 3) {
+        } else if (compare_to_menu_mode(LOG_TIME_CONFIG)) {
             log_time = get_log_time(semaphore_USB);
-        } else if (result == 4) {
+        } else if (compare_to_menu_mode(DOWNLOAD_LOG)) {
             xSemaphoreTake(mutex_log, portMAX_DELAY);
             download_log(semaphore_USB);
             xSemaphoreGive(mutex_log);
