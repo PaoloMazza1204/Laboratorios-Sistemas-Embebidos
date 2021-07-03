@@ -18,11 +18,24 @@
 
 log_register_t buffer_log[250];
 uint8_t position = 0;
+uint32_t id = 0;
 
-void add_register_to_log(DRIVE_PATTERN pattern){
+void add_register_to_log(DRIVE_PATTERN pattern) {
     buffer_log[position].drive_pattern = pattern;
-    buffer_log[position].id = position;
-    position = (position+1)%250; 
+    buffer_log[position].id = ++id;
+    position = (position + 1) % 250;
+}
+
+log_register_t* get_log() {
+    return buffer_log;
+}
+
+uint8_t get_position() {
+    return position;
+}
+
+uint32_t get_id() {
+    return id;
 }
 
 /* *****************************************************************************

@@ -62,8 +62,8 @@
         <itemPath>platform/led_RGB.h</itemPath>
         <itemPath>platform/WS2812.h</itemPath>
         <itemPath>platform/car_state.h</itemPath>
-        <itemPath>menu.h</itemPath>
         <itemPath>platform/log.h</itemPath>
+        <itemPath>platform/menu.h</itemPath>
       </logicalFolder>
       <itemPath>FreeRTOSConfig.h</itemPath>
     </logicalFolder>
@@ -125,8 +125,8 @@
         <itemPath>platform/led_RGB.c</itemPath>
         <itemPath>platform/WS2812.c</itemPath>
         <itemPath>platform/car_state.c</itemPath>
-        <itemPath>menu.c</itemPath>
         <itemPath>platform/log.c</itemPath>
+        <itemPath>platform/menu.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
     </logicalFolder>

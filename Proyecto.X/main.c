@@ -21,7 +21,7 @@
 #include "platform/WS2812.h"
 #include "framework/Accelerometer/Accelerometer.h"
 #include "framework/Button/Button.h"
-#include "menu.h"
+#include "platform/menu.h"
 #include "platform/led_RGB.h"
 #include "platform/log.h"
 
@@ -45,8 +45,8 @@ void enable_log_update(void *p_param);
 SemaphoreHandle_t semaphore_ACCEL;
 SemaphoreHandle_t semaphore_config_adc;
 SemaphoreHandle_t semaphore_USB;
-SemaphoreHandle_t semaphore_log;
-//SemaphoreHandle_t mutex;
+SemaphoreHandle_t semaphore_enable_log;
+SemaphoreHandle_t mutex_log;
 
 float threshold_abrupt = DEFAULT_THRESHOLD;
 float threshold_crash = DEFAULT_THRESHOLD;
@@ -56,7 +56,7 @@ const ws2812_t *color_abrupt = &DEFAULT_COLOR_ABRUPT;
 const ws2812_t *color_crash = &DEFAULT_COLOR_CRASH;
 const ws2812_t *color_threshold = &DEFAULT_COLOR_THRESHOLD;
 
-DRIVE_PATTERN last_pattern = OK;
+DRIVE_PATTERN drive_pattern = OK;
 uint8_t threshold_to_change; // umbral a configurar
 
 /*
@@ -82,7 +82,8 @@ int main(void) {
     semaphore_ACCEL = xSemaphoreCreateBinary();
     semaphore_config_adc = xSemaphoreCreateBinary();
     semaphore_USB = xSemaphoreCreateBinary();
-    semaphore_log = xSemaphoreCreateBinary();
+    semaphore_enable_log = xSemaphoreCreateBinary();
+    mutex_log = xSemaphoreCreateMutex();
     //    mutex = xSemaphoreCreateMutex();
     while (!ACCEL_init());
 
@@ -117,7 +118,7 @@ void config_ACCEL(void *p_param) {
 
 void update_LEDs(void *p_param) {
     ws2812_t color;
-    DRIVE_PATTERN drive_pattern;
+    DRIVE_PATTERN last_pattern = drive_pattern;
     for (;;) {
         //xSemaphoreTake(semaphore_ACCEL, portMAX_DELAY);
         drive_pattern = get_state_color(&threshold_abrupt, &threshold_crash); // modificar esto
@@ -128,7 +129,7 @@ void update_LEDs(void *p_param) {
         } else {
             if ((drive_pattern == ABRUPT && last_pattern == OK) ||
                     (drive_pattern == CRASH && last_pattern != CRASH)) {
-                xSemaphoreGive(semaphore_log);
+                xSemaphoreGive(semaphore_enable_log);
             }
             uint8_t i;
             for (i = 0; i < 3; i++) {
@@ -188,12 +189,16 @@ void button_check(void *p_param) {
         take_button_semaphore();
         // este semaforo se habilita cuando el USB esta configurado.
         xSemaphoreTake(semaphore_USB, portMAX_DELAY);
-        uint8_t result = user_interface();
+        uint8_t result = user_interface(semaphore_USB);
         if (result < 3) {
             threshold_to_change = result;
             xSemaphoreGive(semaphore_config_adc);
         } else if (result == 3) {
-            //xSemaphoreGive(semaphore_LOG DATOS);
+            log_time = get_log_time(semaphore_USB);
+        } else if (result == 4) {
+            xSemaphoreTake(mutex_log, portMAX_DELAY);
+            download_log(semaphore_USB);
+            xSemaphoreGive(mutex_log);
         }
     }
 }
@@ -201,16 +206,18 @@ void button_check(void *p_param) {
 void log_update(void* p_param) {
     log_register_t reg;
     for (;;) {
-        xSemaphoreTake(semaphore_log, portMAX_DELAY);
+        xSemaphoreTake(semaphore_enable_log, portMAX_DELAY); // habilita cada x tiempo tomar la medicion 
         LEDA_Toggle();
-        // hacer cosas
+        xSemaphoreTake(mutex_log, portMAX_DELAY); // controlar productor-consumidor
+        add_register_to_log(drive_pattern);
+        xSemaphoreGive(mutex_log);
     }
 }
 
 void enable_log_update(void* p_param) {
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(log_time * 1000));
-        xSemaphoreGive(semaphore_log);
+        xSemaphoreGive(semaphore_enable_log);
     }
 }
 
