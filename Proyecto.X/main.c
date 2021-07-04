@@ -2,9 +2,10 @@
   Section: Included Files
  */
 /* TO-DO:
+ * destruir el tridente (hacer 2 metodos, uno que reciba string y otro que reciba 2 parametros y hace override)
  * Hacer los logs (GPS)
- * Hacer el extra (colores)
- * destruir el tridente
+ * Hacer buzzer
+ * Hacer msj a bruno y felipe
  * 
  */
 /* Kernel includes. */
@@ -192,7 +193,7 @@ void button_check(void *p_param) {
         // al apretar el boton.
         take_button_semaphore();
         // este semaforo se habilita cuando el USB esta configurado.
-        xSemaphoreTake(semaphore_USB, portMAX_DELAY);
+////        xSemaphoreTake(semaphore_USB, portMAX_DELAY);
         user_interface(semaphore_USB);
         if (compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG) || compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) {
             xSemaphoreGive(semaphore_config_adc);
