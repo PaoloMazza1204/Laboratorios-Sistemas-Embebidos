@@ -28,10 +28,6 @@
 
 #define DEFAULT_THRESHOLD 1.5f
 #define DEFAULT_LOG_TIME 10
-#define DEFAULT_COLOR_OK GREEN
-#define DEFAULT_COLOR_ABRUPT YELLOW
-#define DEFAULT_COLOR_CRASH RED
-#define DEFAULT_COLOR_THRESHOLD BLUE
 
 // tasks
 void update_LEDs(void *p_param);
@@ -52,10 +48,6 @@ SemaphoreHandle_t mutex_log;
 float threshold_abrupt = DEFAULT_THRESHOLD;
 float threshold_crash = DEFAULT_THRESHOLD;
 uint8_t log_time = DEFAULT_LOG_TIME;
-const ws2812_t *color_ok = &DEFAULT_COLOR_OK;
-const ws2812_t *color_abrupt = &DEFAULT_COLOR_ABRUPT;
-const ws2812_t *color_crash = &DEFAULT_COLOR_CRASH;
-const ws2812_t *color_threshold = &DEFAULT_COLOR_THRESHOLD;
 
 DRIVE_PATTERN drive_pattern = OK;
 uint8_t threshold_to_change; // umbral a configurar
@@ -123,10 +115,12 @@ void update_LEDs(void *p_param) {
     for (;;) {
         //xSemaphoreTake(semaphore_ACCEL, portMAX_DELAY);
         drive_pattern = get_state_color(&threshold_abrupt, &threshold_crash); // modificar esto
-        color = drive_pattern == OK ? *color_ok : drive_pattern == ABRUPT ? *color_abrupt : *color_crash;
+        color = drive_pattern == OK ? get_mode_color(COLOR_OK_POSITION) : 
+            drive_pattern == ABRUPT ? get_mode_color(COLOR_ABRUPT_POSITION) : 
+                get_mode_color(COLOR_CRASH_POSITION);
         //xSemaphoreGive(semaphore_ACCEL);
         if (drive_pattern == OK) {
-            update_LEDs_array(*color_ok, 8);
+            update_LEDs_array(get_mode_color(COLOR_OK_POSITION), 8);
         } else {
             if ((drive_pattern == ABRUPT && last_pattern == OK) ||
                     (drive_pattern == CRASH && last_pattern != CRASH)) {

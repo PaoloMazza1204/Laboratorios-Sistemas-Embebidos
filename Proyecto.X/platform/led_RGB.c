@@ -5,12 +5,19 @@
 #include "led_RGB.h"
 #include "date.h"
 
-/* ************************************************************************** */
-/* Section: File Scope or Global Data                                         */
-/* ************************************************************************** */
 app_register_t app_register;
 ws2812_t leds_RGB[8]; // Vector con el color actual de los leds.
 ws2812_t colors_RGB[6]; // Vector con los posibles colores de un led.
+
+const ws2812_t *mode_colors[4] = {&DEFAULT_COLOR_OK, &DEFAULT_COLOR_ABRUPT, &DEFAULT_COLOR_CRASH, &DEFAULT_COLOR_THRESHOLD};
+
+ws2812_t get_mode_color(uint8_t position){
+    return *mode_colors[position];
+}
+
+void set_mode_color(uint8_t position, ws2812_t color){
+    mode_colors[position] = &color;
+}
 
 /* Mapeo de los leds RGB para la placa. */
 uint8_t map_led_RGB(uint8_t led) {

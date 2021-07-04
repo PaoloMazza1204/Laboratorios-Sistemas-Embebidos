@@ -31,7 +31,7 @@ void user_interface(SemaphoreHandle_t semaphore_USB) {
     for (;;) {
         if (menu_mode == START && !greeting_sent) {
             greeting_sent = true;
-            numBytes = sprintf(buffer, "\n1-Ajustar umbrales\n2-Log de datos");
+            numBytes = sprintf(buffer, "\n1-Ajustar umbrales\n2-Log de datos\n3-Configurar colores");
             putUSBUSART(buffer, numBytes);
         }
         numBytes = getsUSBUSART(buffer, sizeof (buffer));
@@ -69,6 +69,16 @@ void user_interface(SemaphoreHandle_t semaphore_USB) {
                 numBytes = sprintf(buffer, "\nIngrese %s o %s", CANCEL_CONFIG_ADC, CONFIRM_CONFIG_ADC);
                 putUSBUSART(buffer, numBytes);
                 return;
+            }
+        }
+        else if( (numBytes == 1) && (buffer[0] == '3')){
+            if(menu_mode == START){
+                menu_mode = WAITING_COLOR;
+                xSemaphoreTake(semaphore_USB, portMAX_DELAY);
+                numBytes = sprintf(buffer, "\nCambiar color de:\n1-OK\n2-BRUSCO\n3-CHOQUE\n4-UMBRALES");
+                putUSBUSART(buffer, numBytes);
+            }else if(menu_mode == WAITING_COLOR){
+                
             }
         }
         else if(strncasecmp("cancelar",buffer,strlen("cancelar")) == 0){
