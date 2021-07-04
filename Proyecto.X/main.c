@@ -115,8 +115,8 @@ void update_LEDs(void *p_param) {
     for (;;) {
         //xSemaphoreTake(semaphore_ACCEL, portMAX_DELAY);
         drive_pattern = get_state_color(&threshold_abrupt, &threshold_crash); // modificar esto
-        color = drive_pattern == OK ? get_mode_color(COLOR_OK_POSITION) : 
-            drive_pattern == ABRUPT ? get_mode_color(COLOR_ABRUPT_POSITION) : 
+        color = drive_pattern == OK ? get_mode_color(COLOR_OK_POSITION) :
+                drive_pattern == ABRUPT ? get_mode_color(COLOR_ABRUPT_POSITION) :
                 get_mode_color(COLOR_CRASH_POSITION);
         //xSemaphoreGive(semaphore_ACCEL);
         if (drive_pattern == OK) {
@@ -140,8 +140,8 @@ void update_LEDs(void *p_param) {
 
 void analog_result(void *p_param) {
     TaskHandle_t handle_convert = NULL;
-    bool confirm = false;
     for (;;) {
+        bool confirm = false;
         xSemaphoreTake(semaphore_config_adc, portMAX_DELAY);
         xTaskCreate(ANALOG_convert, "Convert", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &handle_convert);
         uint8_t leds = 0;
@@ -150,17 +150,21 @@ void analog_result(void *p_param) {
             if (leds_actual != leds) {
                 if (((compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG)) && ((leds_actual - 1) + DEFAULT_THRESHOLD <= threshold_crash))
                         || ((compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) && ((leds_actual - 1) + DEFAULT_THRESHOLD >= threshold_abrupt))) {
-                    update_LEDs_array(BLUE, leds_actual);
+                    update_LEDs_array(get_mode_color(COLOR_THRESHOLD_POSITION), leds_actual);
                     leds = leds_actual;
+                } else if (compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG)) {
+                    update_LEDs_array(get_mode_color(COLOR_THRESHOLD_POSITION), (uint8_t) (threshold_crash - DEFAULT_THRESHOLD + 1));
+                } else if (compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) {
+                    update_LEDs_array(get_mode_color(COLOR_THRESHOLD_POSITION), (uint8_t) (threshold_abrupt - DEFAULT_THRESHOLD + 1));
                 }
             }
             confirm = confirm_config_ADC();
         }
         if (confirm) {
             if (compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG)) {
-                threshold_abrupt = DEFAULT_THRESHOLD + ((leds - 1));
+                threshold_abrupt = DEFAULT_THRESHOLD + ((leds > 0) ? (leds - 1) : 0);
             } else {
-                threshold_crash = DEFAULT_THRESHOLD + ((leds - 1));
+                threshold_crash = DEFAULT_THRESHOLD + ((leds > 0) ? (leds - 1) : 0);
             }
         }
         reset_menu_mode();

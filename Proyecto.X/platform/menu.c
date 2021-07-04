@@ -16,6 +16,7 @@
 /* ************************************************************************** */
 #include "menu.h"
 #include "date.h"
+#include "led_RGB.h"
 
 #define CANCEL_CONFIG_ADC "Cancelar"
 #define CONFIRM_CONFIG_ADC "Confirmar"
@@ -70,18 +71,17 @@ void user_interface(SemaphoreHandle_t semaphore_USB) {
                 putUSBUSART(buffer, numBytes);
                 return;
             }
-        }
-        else if( (numBytes == 1) && (buffer[0] == '3')){
-            if(menu_mode == START){
+        } else if ((numBytes == 1) && (buffer[0] == '3')) {
+            if (menu_mode == START) {
                 menu_mode = WAITING_COLOR;
                 xSemaphoreTake(semaphore_USB, portMAX_DELAY);
-                numBytes = sprintf(buffer, "\nCambiar color de:\n1-OK\n2-BRUSCO\n3-CHOQUE\n4-UMBRALES");
+                numBytes = sprintf(buffer, "\nIngrese: R,G,B-MODO, donde MODO = {OK,BRUSCO,CHOQUE,UMBRAL}");
                 putUSBUSART(buffer, numBytes);
-            }else if(menu_mode == WAITING_COLOR){
-                
             }
-        }
-        else if(strncasecmp("cancelar",buffer,strlen("cancelar")) == 0){
+        } else if ((menu_mode == WAITING_COLOR) && (numBytes > 0)) {
+            change_color();
+            return;
+        } else if (strncasecmp("cancelar", buffer, strlen("cancelar")) == 0) {
             greeting_sent = false;
             menu_mode = START;
         }
@@ -140,6 +140,33 @@ void download_log(SemaphoreHandle_t semaphore_USB) {
         putUSBUSART(buffer, numBytes);
     }
     reset_menu_mode();
+}
+
+void change_color() {
+    ws2812_t color;
+    uint8_t position;
+    uint8_t * input[4];
+    input[0] = strtok(buffer, ",-");
+    for (position = 1; position < 4; position++) {
+        input[position] = strtok(NULL, ",-");
+    }
+    color.r = atoi(input[0]) < 256 ? atoi(input[0]) : 255;
+    color.g = atoi(input[1]) < 256 ? atoi(input[1]) : 255;
+    color.b = atoi(input[2]) < 256 ? atoi(input[2]) : 255;
+    map_mode(input[3], color);
+    reset_menu_mode();
+}
+
+void map_mode(uint8_t* mode, ws2812_t color){
+    if (strncasecmp(mode, "OK", 2) == 0) {
+        set_mode_color(COLOR_OK_POSITION, color);
+    } else if (strncasecmp(mode, "BRUSCO", 6) == 0) {
+        set_mode_color(COLOR_ABRUPT_POSITION, color);
+    } else if (strncasecmp(mode, "CHOQUE", 6) == 0) {
+        set_mode_color(COLOR_CRASH_POSITION, color);
+    } else if (strncasecmp(mode, "UMBRAL", 6) == 0) {
+        set_mode_color(COLOR_THRESHOLD_POSITION, color);
+    }
 }
 
 void reset_menu_mode() {

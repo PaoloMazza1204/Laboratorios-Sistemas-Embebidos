@@ -10,13 +10,15 @@ ws2812_t leds_RGB[8]; // Vector con el color actual de los leds.
 ws2812_t colors_RGB[6]; // Vector con los posibles colores de un led.
 
 const ws2812_t *mode_colors[4] = {&DEFAULT_COLOR_OK, &DEFAULT_COLOR_ABRUPT, &DEFAULT_COLOR_CRASH, &DEFAULT_COLOR_THRESHOLD};
+ws2812_t modified_mode_colors[4];
 
 ws2812_t get_mode_color(uint8_t position){
     return *mode_colors[position];
 }
 
 void set_mode_color(uint8_t position, ws2812_t color){
-    mode_colors[position] = &color;
+    modified_mode_colors[position] = color;
+    mode_colors[position] = &modified_mode_colors[position];
 }
 
 /* Mapeo de los leds RGB para la placa. */

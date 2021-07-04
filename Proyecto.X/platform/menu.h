@@ -45,6 +45,8 @@ bool confirm_config_ADC();
 void download_log(SemaphoreHandle_t semaphore_USB);
 uint8_t get_log_time(SemaphoreHandle_t semaphore_USB);
 bool compare_to_menu_mode(MENU_MODE mode);
+void change_color();
+void map_mode(uint8_t* mode, ws2812_t color);
 void reset_menu_mode();
 
 #endif /* _MENU_H */
