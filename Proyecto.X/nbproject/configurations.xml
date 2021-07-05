@@ -16,6 +16,12 @@
         <logicalFolder name="Button" displayName="Button" projectFiles="true">
           <itemPath>framework/Button/Button.h</itemPath>
         </logicalFolder>
+        <logicalFolder name="GPS" displayName="GPS" projectFiles="true">
+          <itemPath>framework/GPS/GPS.h</itemPath>
+        </logicalFolder>
+        <logicalFolder name="SIM808" displayName="SIM808" projectFiles="true">
+          <itemPath>framework/SIM808/SIM808.h</itemPath>
+        </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f1" displayName="freeRTOS" projectFiles="true">
         <itemPath>freeRTOS/include/FreeRTOS.h</itemPath>
@@ -53,6 +59,8 @@
         <itemPath>mcc_generated_files/spi1.h</itemPath>
         <itemPath>mcc_generated_files/adc1.h</itemPath>
         <itemPath>mcc_generated_files/adc_module_features.h</itemPath>
+        <itemPath>mcc_generated_files/uart1.h</itemPath>
+        <itemPath>mcc_generated_files/tmr2.h</itemPath>
       </logicalFolder>
       <logicalFolder name="platform" displayName="platform" projectFiles="true">
         <logicalFolder name="LIS3DH" displayName="LIS3DH" projectFiles="true">
@@ -86,6 +94,12 @@
         <logicalFolder name="Button" displayName="Button" projectFiles="true">
           <itemPath>framework/Button/Button.c</itemPath>
         </logicalFolder>
+        <logicalFolder name="GPS" displayName="GPS" projectFiles="true">
+          <itemPath>framework/GPS/GPS.c</itemPath>
+        </logicalFolder>
+        <logicalFolder name="SIM808" displayName="SIM808" projectFiles="true">
+          <itemPath>framework/SIM808/SIM808.c</itemPath>
+        </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f1" displayName="freeRTOS" projectFiles="true">
         <itemPath>freeRTOS/croutine.c</itemPath>
@@ -116,6 +130,8 @@
         <itemPath>mcc_generated_files/rtcc.c</itemPath>
         <itemPath>mcc_generated_files/spi1.c</itemPath>
         <itemPath>mcc_generated_files/adc1.c</itemPath>
+        <itemPath>mcc_generated_files/uart1.c</itemPath>
+        <itemPath>mcc_generated_files/tmr2.c</itemPath>
       </logicalFolder>
       <logicalFolder name="platform" displayName="platform" projectFiles="true">
         <logicalFolder name="LIS3DH" displayName="LIS3DH" projectFiles="true">

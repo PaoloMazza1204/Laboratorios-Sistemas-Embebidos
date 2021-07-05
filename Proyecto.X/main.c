@@ -2,9 +2,8 @@
   Section: Included Files
  */
 /* TO-DO:
- * destruir el tridente (hacer 2 metodos, uno que reciba string y otro que reciba 2 parametros y hace override)
+ * Cambiar funciones deprecadas
  * Hacer los logs (GPS)
- * Hacer buzzer
  * Hacer msj a bruno y felipe
  * 
  */
@@ -26,6 +25,10 @@
 #include "platform/menu.h"
 #include "platform/led_RGB.h"
 #include "platform/log.h"
+#include "framework/GPS/GPS.h"
+#include "framework/SIM808/SIM808.h"
+#include "mcc_generated_files/uart1.h"
+#include "mcc_generated_files/tmr2.h"
 
 #define DEFAULT_THRESHOLD 1.5f
 #define DEFAULT_LOG_TIME 10
@@ -38,6 +41,7 @@ void button_check(void *p_param);
 void check_USB(void *p_param);
 void log_update(void *p_param);
 void enable_log_update(void *p_param);
+void data_GPS(void *p_param);
 
 // semaforos
 SemaphoreHandle_t semaphore_ACCEL;
@@ -80,18 +84,20 @@ int main(void) {
     mutex_log = xSemaphoreCreateMutex();
     //    mutex = xSemaphoreCreateMutex();
     while (!ACCEL_init());
+    TMR2_Stop();
 
     /* Create the tasks defined within this file. */
-    //xTaskCreate(ANALOG_RESULT, "ANALOG", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    //xTaskCreate(ANALOG_convert, "Convert", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
     xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(log_update, "log", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(enable_log_update, "enable", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+
+    //    xTaskCreate(SIM808_taskCheck, "modemTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    //    xTaskCreate(SIM808_initModule, "modemIni", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &modemInitHandle);
+    //    xTaskCreate(data_GPS, "dataGPS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     //xTaskCreate(config_ACCEL, "ACCEL", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
-    //xTaskCreate(delay_CDCTxService, "delay", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     /* Finally start the scheduler. */
     vTaskStartScheduler();
 
@@ -101,6 +107,24 @@ int main(void) {
     to be created.  See the memory management section on the FreeRTOS web site
     for more details. */
     for (;;);
+}
+
+void data_GPS(void *p_param) {
+    uint8_t buffer[256];
+    GPSPosition_t position;
+    struct tm date;
+    for (;;) {
+        do {
+            xSemaphoreTake(c_semGPSIsReady, portMAX_DELAY);
+            SIM808_getNMEA(buffer);
+            xSemaphoreGive(c_semGPSIsReady);
+        } while (!SIM808_validateNMEAFrame(buffer));
+        LEDA_SetHigh();
+        GPS_getPosition(&position, buffer);
+        xSemaphoreTake(semaphore_USB, portMAX_DELAY);
+        putUSBUSART(buffer, 60);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
 
 void config_ACCEL(void *p_param) {
@@ -130,7 +154,9 @@ void update_LEDs(void *p_param) {
             uint8_t i;
             for (i = 0; i < 3; i++) {
                 update_LEDs_array(color, 8);
+                TMR2_Start();
                 vTaskDelay(pdMS_TO_TICKS(166));
+                TMR2_Stop();
                 update_LEDs_array(BLACK, 8);
                 vTaskDelay(pdMS_TO_TICKS(166));
             }
@@ -193,7 +219,7 @@ void button_check(void *p_param) {
         // al apretar el boton.
         take_button_semaphore();
         // este semaforo se habilita cuando el USB esta configurado.
-////        xSemaphoreTake(semaphore_USB, portMAX_DELAY);
+        ////        xSemaphoreTake(semaphore_USB, portMAX_DELAY);
         user_interface(semaphore_USB);
         if (compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG) || compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) {
             xSemaphoreGive(semaphore_config_adc);
@@ -211,7 +237,6 @@ void log_update(void* p_param) {
     log_register_t reg;
     for (;;) {
         xSemaphoreTake(semaphore_enable_log, portMAX_DELAY); // habilita cada x tiempo tomar la medicion 
-        LEDA_Toggle();
         xSemaphoreTake(mutex_log, portMAX_DELAY); // controlar productor-consumidor
         add_register_to_log(drive_pattern);
         xSemaphoreGive(mutex_log);
