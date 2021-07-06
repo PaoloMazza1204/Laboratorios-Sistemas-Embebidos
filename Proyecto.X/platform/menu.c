@@ -26,7 +26,9 @@ uint8_t numBytes;
 MENU_MODE menu_mode = START;
 
 static void write(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint8_t* string1, uint8_t* string2);
-static void write_log(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint8_t id, uint8_t* drive_pattern);
+static void write_log(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint8_t id, time_t* date,
+        float latitude, float longitude, uint8_t* drive_pattern);
+static void datef(time_t* date, uint8_t* date_format);
 
 void user_interface(SemaphoreHandle_t semaphore_USB) {
     bool greeting_sent = false;
@@ -105,19 +107,21 @@ bool confirm_config_ADC() {
 }
 
 void download_log(SemaphoreHandle_t semaphore_USB) {
-    uint8_t * patterns[] = {"OK", "BRUSCO", "CHOQUE"};
-    log_register_t *log = get_log();
-    uint32_t id = get_id();
+    uint8_t* patterns[] = {"OK", "BRUSCO", "CHOQUE"};
+    log_register_t* log = get_log();
+    uint16_t id = get_id();
     uint8_t position = get_position();
     write(semaphore_USB, "\n\n*ID - PATRÓN DE MANEJO*\n", NULL, NULL);
     uint8_t i;
     if (id > 250) {
         for (i = position; i < 250; i++) {
-            write_log(semaphore_USB, "\n%d - %s", log[i].id, patterns[log[i].drive_pattern]);
+            write_log(semaphore_USB, "\n%d,%s,%f,%f,%s", log[i].id, &(log[i].date), log[i].latitude,
+                    log[i].longitude, patterns[log[i].drive_pattern]);
         }
     }
     for (i = 0; i < position; i++) {
-        write_log(semaphore_USB, "\n%d - %s", log[i].id, patterns[log[i].drive_pattern]);
+        write_log(semaphore_USB, "\n%d,%s,%f,%f,%s", log[i].id, &(log[i].date), log[i].latitude,
+                log[i].longitude, patterns[log[i].drive_pattern]);
     }
     reset_menu_mode();
 }
@@ -159,10 +163,19 @@ static void write(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint8_t* str
     putUSBUSART(buffer, numBytes);
 }
 
-static void write_log(SemaphoreHandle_t semaphore_USB, uint8_t* string, uint8_t id, uint8_t* drive_pattern) {
+static void write_log(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint8_t id, time_t* date,
+        float latitude, float longitude, uint8_t* drive_pattern) {
+    uint8_t date_format[19];
+    datef(date, date_format);
     xSemaphoreTake(semaphore_USB, portMAX_DELAY);
-    numBytes = sprintf(buffer, string, id, drive_pattern);
+    numBytes = sprintf(buffer, format, id, date_format, latitude, longitude, drive_pattern);
     putUSBUSART(buffer, numBytes);
+}
+
+static void datef(time_t* date, uint8_t* date_format) {
+    struct tm* date_struct = gmtime(date);
+    sprintf(date_format, "%d/%d/%d %d:%d:%d", date_struct->tm_year + 1900, date_struct->tm_mon + 1,
+            date_struct->tm_mday, date_struct->tm_hour, date_struct->tm_min, date_struct->tm_sec);
 }
 
 void reset_menu_mode() {

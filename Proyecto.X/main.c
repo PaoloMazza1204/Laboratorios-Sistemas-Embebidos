@@ -2,9 +2,8 @@
   Section: Included Files
  */
 /* TO-DO:
- * Cambiar funciones deprecadas
- * Hacer los logs (GPS)
- * Hacer msj a bruno y felipe
+ * Arreglar log, mantener ultima trama global
+ * Hacer msj a bruno y felipe (a medias, hacer solo cuando chocamos, igual que el buzzer)
  * 
  */
 /* Kernel includes. */
@@ -42,6 +41,7 @@ void check_USB(void *p_param);
 void log_update(void *p_param);
 void enable_log_update(void *p_param);
 void data_GPS(void *p_param);
+void text_SMS(void *p_param);
 
 // semaforos
 SemaphoreHandle_t semaphore_ACCEL;
@@ -87,16 +87,17 @@ int main(void) {
     TMR2_Stop();
 
     /* Create the tasks defined within this file. */
-    xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
-    xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
-    xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(log_update, "log", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(enable_log_update, "enable", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+//    xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+//    xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+//    xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
+//    xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+//    xTaskCreate(log_update, "log", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+//    xTaskCreate(enable_log_update, "enable", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 
-    //    xTaskCreate(SIM808_taskCheck, "modemTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    //    xTaskCreate(SIM808_initModule, "modemIni", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &modemInitHandle);
-    //    xTaskCreate(data_GPS, "dataGPS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(SIM808_taskCheck, "modemTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(SIM808_initModule, "modemIni", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &modemInitHandle);
+    xTaskCreate(data_GPS, "dataGPS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    //xTaskCreate(text_SMS, "textSMS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     //xTaskCreate(config_ACCEL, "ACCEL", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     /* Finally start the scheduler. */
     vTaskStartScheduler();
@@ -118,12 +119,22 @@ void data_GPS(void *p_param) {
             xSemaphoreTake(c_semGPSIsReady, portMAX_DELAY);
             SIM808_getNMEA(buffer);
             xSemaphoreGive(c_semGPSIsReady);
+            vTaskDelay(pdMS_TO_TICKS(1000));
         } while (!SIM808_validateNMEAFrame(buffer));
         LEDA_SetHigh();
         GPS_getPosition(&position, buffer);
         xSemaphoreTake(semaphore_USB, portMAX_DELAY);
         putUSBUSART(buffer, 60);
         vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+void text_SMS(void* p_param) {
+    for (;;) {
+        xSemaphoreTake(c_semGSMIsReady, portMAX_DELAY);
+        SIM808_sendSMS("092370344", "hola Paoló");
+        xSemaphoreGive(c_semGSMIsReady);
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
 
@@ -167,13 +178,16 @@ void update_LEDs(void *p_param) {
 
 void analog_result(void *p_param) {
     TaskHandle_t handle_convert = NULL;
+    bool confirm;
+    uint8_t leds;
+    uint8_t leds_actual;
     for (;;) {
-        bool confirm = false;
+        confirm = false;
         xSemaphoreTake(semaphore_config_adc, portMAX_DELAY);
         xTaskCreate(ANALOG_convert, "Convert", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &handle_convert);
-        uint8_t leds = 0;
+        leds = 0;
         while (!cancel_config_ADC() && !confirm) {
-            uint8_t leds_actual = adc_to_LEDs();
+            leds_actual = adc_to_LEDs();
             if (leds_actual != leds) {
                 if (((compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG)) && ((leds_actual - 1) + DEFAULT_THRESHOLD <= threshold_crash))
                         || ((compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) && ((leds_actual - 1) + DEFAULT_THRESHOLD >= threshold_abrupt))) {
