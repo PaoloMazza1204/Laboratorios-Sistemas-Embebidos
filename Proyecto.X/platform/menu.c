@@ -111,16 +111,16 @@ void download_log(SemaphoreHandle_t semaphore_USB) {
     log_register_t* log = get_log();
     uint16_t id = get_id();
     uint8_t position = get_position();
-    write(semaphore_USB, "\n\n*ID - PATRÓN DE MANEJO*\n", NULL, NULL);
+    write(semaphore_USB, "\n\n*ID,FECHA Y HORA,LATITUD,LONGITUD,PATRÓN DE MANEJO*\n", NULL, NULL);
     uint8_t i;
     if (id > 250) {
         for (i = position; i < 250; i++) {
-            write_log(semaphore_USB, "\n%d,%s,%f,%f,%s", log[i].id, &(log[i].date), log[i].latitude,
+            write_log(semaphore_USB, "\n%05d,%s,%f,%f,%s", log[i].id, &(log[i].date), log[i].latitude,
                     log[i].longitude, patterns[log[i].drive_pattern]);
         }
     }
     for (i = 0; i < position; i++) {
-        write_log(semaphore_USB, "\n%d,%s,%f,%f,%s", log[i].id, &(log[i].date), log[i].latitude,
+        write_log(semaphore_USB, "\n%05d,%s,%f,%f,%s", log[i].id, &(log[i].date), log[i].latitude,
                 log[i].longitude, patterns[log[i].drive_pattern]);
     }
     reset_menu_mode();
@@ -174,7 +174,7 @@ static void write_log(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint8_t 
 
 static void datef(time_t* date, uint8_t* date_format) {
     struct tm* date_struct = gmtime(date);
-    sprintf(date_format, "%d/%d/%d %d:%d:%d", date_struct->tm_year + 1900, date_struct->tm_mon + 1,
+    sprintf(date_format, "%04d/%02d/%02d %02d:%02d:%02d", date_struct->tm_year + 1900, date_struct->tm_mon + 1,
             date_struct->tm_mday, date_struct->tm_hour, date_struct->tm_min, date_struct->tm_sec);
 }
 

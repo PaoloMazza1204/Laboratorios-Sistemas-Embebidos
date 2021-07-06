@@ -2,7 +2,7 @@
   Section: Included Files
  */
 /* TO-DO:
- * Arreglar log, mantener ultima trama global
+ * Arreglar menu con boton
  * Hacer msj a bruno y felipe (a medias, hacer solo cuando chocamos, igual que el buzzer)
  * 
  */
@@ -28,9 +28,12 @@
 #include "framework/SIM808/SIM808.h"
 #include "mcc_generated_files/uart1.h"
 #include "mcc_generated_files/tmr2.h"
+#include "mcc_generated_files/rtcc.h"
 
-#define DEFAULT_THRESHOLD 1.5f
-#define DEFAULT_LOG_TIME 10
+#define DEFAULT_THRESHOLD   1.5f
+#define DEFAULT_LOG_TIME    10
+#define USE_GPS             0   // Si se usa GPS, se debe poner en 1
+#define STATIC_NMEA_FRAME   "\r\n+CGNSINF: 1,1,20210705003045.000,-34.887747,-56.159689,139.200,0.69,110.9,1,,11.9,11.9,1.0,,7,3,,,32,,"
 
 // tasks
 void update_LEDs(void *p_param);
@@ -40,7 +43,7 @@ void button_check(void *p_param);
 void check_USB(void *p_param);
 void log_update(void *p_param);
 void enable_log_update(void *p_param);
-void data_GPS(void *p_param);
+void update_NMEA_GPS(void *p_param);
 void text_SMS(void *p_param);
 
 // semaforos
@@ -49,10 +52,12 @@ SemaphoreHandle_t semaphore_config_adc;
 SemaphoreHandle_t semaphore_USB;
 SemaphoreHandle_t semaphore_enable_log;
 SemaphoreHandle_t mutex_log;
+SemaphoreHandle_t mutex_buffer_NMEA;
 
 float threshold_abrupt = DEFAULT_THRESHOLD;
 float threshold_crash = DEFAULT_THRESHOLD;
 uint8_t log_time = DEFAULT_LOG_TIME;
+uint8_t buffer_NMEA[104];
 
 DRIVE_PATTERN drive_pattern = OK;
 uint8_t threshold_to_change; // umbral a configurar
@@ -82,21 +87,27 @@ int main(void) {
     semaphore_USB = xSemaphoreCreateBinary();
     semaphore_enable_log = xSemaphoreCreateBinary();
     mutex_log = xSemaphoreCreateMutex();
+    mutex_buffer_NMEA = xSemaphoreCreateMutex();
     //    mutex = xSemaphoreCreateMutex();
     while (!ACCEL_init());
-    TMR2_Stop();
+
+    if (!USE_GPS) {
+        struct tm static_date;
+        GPS_getUTC(&static_date, STATIC_NMEA_FRAME);
+        RTCC_TimeSet(&static_date);
+    }
 
     /* Create the tasks defined within this file. */
-//    xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
-//    xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-//    xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
-//    xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-//    xTaskCreate(log_update, "log", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-//    xTaskCreate(enable_log_update, "enable", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+    xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
+    xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(log_update, "log", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(enable_log_update, "enable", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 
     xTaskCreate(SIM808_taskCheck, "modemTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(SIM808_initModule, "modemIni", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &modemInitHandle);
-    xTaskCreate(data_GPS, "dataGPS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(update_NMEA_GPS, "dataGPS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     //xTaskCreate(text_SMS, "textSMS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     //xTaskCreate(config_ACCEL, "ACCEL", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     /* Finally start the scheduler. */
@@ -110,22 +121,21 @@ int main(void) {
     for (;;);
 }
 
-void data_GPS(void *p_param) {
-    uint8_t buffer[256];
-    GPSPosition_t position;
-    struct tm date;
+void update_NMEA_GPS(void *p_param) {
+    uint8_t buffer[104];
     for (;;) {
         do {
             xSemaphoreTake(c_semGPSIsReady, portMAX_DELAY);
             SIM808_getNMEA(buffer);
             xSemaphoreGive(c_semGPSIsReady);
-            vTaskDelay(pdMS_TO_TICKS(1000));
+            if (!USE_GPS) {
+                strcpy(buffer, STATIC_NMEA_FRAME);
+            }
+            vTaskDelay(pdMS_TO_TICKS(2000));
         } while (!SIM808_validateNMEAFrame(buffer));
-        LEDA_SetHigh();
-        GPS_getPosition(&position, buffer);
-        xSemaphoreTake(semaphore_USB, portMAX_DELAY);
-        putUSBUSART(buffer, 60);
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        xSemaphoreTake(mutex_buffer_NMEA, portMAX_DELAY);
+        strcpy(buffer_NMEA, buffer);
+        xSemaphoreGive(mutex_buffer_NMEA);
     }
 }
 
@@ -248,12 +258,26 @@ void button_check(void *p_param) {
 }
 
 void log_update(void* p_param) {
-    log_register_t reg;
+    GPSPosition_t position;
+    struct tm date;
     for (;;) {
-        xSemaphoreTake(semaphore_enable_log, portMAX_DELAY); // habilita cada x tiempo tomar la medicion 
-        xSemaphoreTake(mutex_log, portMAX_DELAY); // controlar productor-consumidor
-        add_register_to_log(drive_pattern);
-        xSemaphoreGive(mutex_log);
+        xSemaphoreTake(semaphore_enable_log, portMAX_DELAY); // habilita cada x tiempo tomar la medicion
+        xSemaphoreTake(mutex_buffer_NMEA, portMAX_DELAY);
+        if (buffer_NMEA[0] != '\0') {
+            GPS_getPosition(&position, buffer_NMEA);
+            if (USE_GPS) {
+                GPS_getUTC(&date, buffer_NMEA);
+            } else {
+                RTCC_TimeGet(&date);
+            }
+            xSemaphoreGive(mutex_buffer_NMEA);
+            xSemaphoreTake(mutex_log, portMAX_DELAY); // controlar productor-consumidor
+            add_register_to_log(date, position, drive_pattern);
+            xSemaphoreGive(mutex_log);
+        }
+        else{
+            xSemaphoreGive(mutex_buffer_NMEA);
+        }
     }
 }
 

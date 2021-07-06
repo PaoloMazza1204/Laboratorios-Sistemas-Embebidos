@@ -24,6 +24,8 @@
 #include "../freeRTOS/include/FreeRTOS.h"
 #include "../freeRTOS/include/semphr.h"
 #include <string.h>
+#include <time.h>
+#include "../framework/GPS/GPS.h"
 
 typedef struct {
     uint16_t id;
@@ -33,7 +35,7 @@ typedef struct {
     uint8_t drive_pattern; // se puede usar como uint8_t
 } log_register_t;
 
-void add_register_to_log(DRIVE_PATTERN pattern);
+void add_register_to_log(struct tm date, GPSPosition_t position_GPS, DRIVE_PATTERN pattern);
 log_register_t* get_log();
 uint8_t get_position();
 uint16_t get_id();
