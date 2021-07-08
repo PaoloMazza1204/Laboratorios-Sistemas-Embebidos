@@ -358,7 +358,7 @@ int8_t SIM808_sendSMS( uint8_t *p_phoneNr, uint8_t *p_string ){
                         readBytes = SIM808_readATResponse( SIM808_SMS_TIMEOUT_ms );
                         if( readBytes>0 ){
                             if( strstr( c_simRxBuffer, ATRES_OK )!=0 ){
-                                retValue = true;
+                                retValue = 1;
                             }
                             else{
                                 retValue = -4; // No se envió
@@ -390,6 +390,7 @@ int8_t SIM808_sendSMS( uint8_t *p_phoneNr, uint8_t *p_string ){
         //Falló envío
         retValue = -2;
     }
+    return retValue;
 }
 
 /**

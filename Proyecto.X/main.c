@@ -2,8 +2,7 @@
   Section: Included Files
  */
 /* TO-DO:
- * Arreglar menu con boton
- * Hacer msj a bruno y felipe (a medias, hacer solo cuando chocamos, igual que el buzzer)
+ * Revisar msj
  * 
  */
 /* Kernel includes. */
@@ -30,10 +29,13 @@
 #include "mcc_generated_files/tmr2.h"
 #include "mcc_generated_files/rtcc.h"
 
-#define DEFAULT_THRESHOLD   1.5f
-#define DEFAULT_LOG_TIME    10
-#define USE_GPS             0   // Si se usa GPS, se debe poner en 1
-#define STATIC_NMEA_FRAME   "\r\n+CGNSINF: 1,1,20210705003045.000,-34.887747,-56.159689,139.200,0.69,110.9,1,,11.9,11.9,1.0,,7,3,,,32,,"
+#define DEFAULT_THRESHOLD                   1.5f
+#define DEFAULT_LOG_TIME                    10
+#define USE_GPS                             0   // Si se usa GPS, se debe poner en 1
+#define STATIC_NMEA_FRAME                   "\r\n+CGNSINF: 1,1,20210705003045.000,-34.887747,-56.159689,139.200,0.69,110.9,1,,11.9,11.9,1.0,,7,3,,,32,,"
+#define configMINIMAL_STACK_SIZE_RESULT		( 250 )
+#define PHONE_NUMBER                        "\"092370344\""
+#define SMS                                 "ADVERTENCIA"
 
 // tasks
 void update_LEDs(void *p_param);
@@ -44,13 +46,14 @@ void check_USB(void *p_param);
 void log_update(void *p_param);
 void enable_log_update(void *p_param);
 void update_NMEA_GPS(void *p_param);
-void text_SMS(void *p_param);
+void send_SMS(void *p_param);
 
 // semaforos
 SemaphoreHandle_t semaphore_ACCEL;
 SemaphoreHandle_t semaphore_config_adc;
 SemaphoreHandle_t semaphore_USB;
 SemaphoreHandle_t semaphore_enable_log;
+SemaphoreHandle_t semaphore_enable_sms;
 SemaphoreHandle_t mutex_log;
 SemaphoreHandle_t mutex_buffer_NMEA;
 
@@ -86,6 +89,7 @@ int main(void) {
     semaphore_config_adc = xSemaphoreCreateBinary();
     semaphore_USB = xSemaphoreCreateBinary();
     semaphore_enable_log = xSemaphoreCreateBinary();
+    semaphore_enable_sms = xSemaphoreCreateBinary();
     mutex_log = xSemaphoreCreateMutex();
     mutex_buffer_NMEA = xSemaphoreCreateMutex();
     //    mutex = xSemaphoreCreateMutex();
@@ -98,7 +102,7 @@ int main(void) {
     }
 
     /* Create the tasks defined within this file. */
-    xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+    xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE_RESULT, NULL, tskIDLE_PRIORITY + 2, NULL);
     xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
     xTaskCreate(update_LEDs, "leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
@@ -108,7 +112,7 @@ int main(void) {
     xTaskCreate(SIM808_taskCheck, "modemTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(SIM808_initModule, "modemIni", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &modemInitHandle);
     xTaskCreate(update_NMEA_GPS, "dataGPS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    //xTaskCreate(text_SMS, "textSMS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    //xTaskCreate(send_SMS, "sendSMS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     //xTaskCreate(config_ACCEL, "ACCEL", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
     /* Finally start the scheduler. */
     vTaskStartScheduler();
@@ -139,12 +143,16 @@ void update_NMEA_GPS(void *p_param) {
     }
 }
 
-void text_SMS(void* p_param) {
+void send_SMS(void* p_param) {
+    int8_t sms_sent;
     for (;;) {
-        xSemaphoreTake(c_semGSMIsReady, portMAX_DELAY);
-        SIM808_sendSMS("092370344", "hola Paoló");
-        xSemaphoreGive(c_semGSMIsReady);
-        vTaskDelay(pdMS_TO_TICKS(10000));
+        xSemaphoreTake(semaphore_enable_sms, portMAX_DELAY);
+        do {
+            xSemaphoreTake(c_semGSMIsReady, portMAX_DELAY);
+            sms_sent = SIM808_sendSMS(PHONE_NUMBER, SMS);
+            xSemaphoreGive(c_semGSMIsReady);
+            vTaskDelay(pdMS_TO_TICKS(2000));
+        } while (sms_sent != 1);
     }
 }
 
@@ -166,10 +174,11 @@ void update_LEDs(void *p_param) {
                 get_mode_color(COLOR_CRASH_POSITION);
         //xSemaphoreGive(semaphore_ACCEL);
         if (drive_pattern == OK) {
-            update_LEDs_array(get_mode_color(COLOR_OK_POSITION), 8);
+            update_LEDs_array(color, 8);
         } else {
             if ((drive_pattern == ABRUPT && last_pattern == OK) ||
                     (drive_pattern == CRASH && last_pattern != CRASH)) {
+                xSemaphoreGive(semaphore_enable_sms);
                 xSemaphoreGive(semaphore_enable_log);
             }
             uint8_t i;
@@ -270,12 +279,17 @@ void log_update(void* p_param) {
             } else {
                 RTCC_TimeGet(&date);
             }
+            //            if (uxSemaphoreGetCount(semaphore_enable_sms)) {
+            //                uint8_t sms[64];
+            //                sprintf(sms, "http://maps.google.com/?q=%f,%f", position.latitude, position.longitude);
+            //                xTaskCreate(send_SMS, "sendSMS", configMINIMAL_STACK_SIZE, (void*) sms, tskIDLE_PRIORITY + 1, NULL);
+            //                xSemaphoreTake(semaphore_enable_sms, portMAX_DELAY);
+            //            }
             xSemaphoreGive(mutex_buffer_NMEA);
             xSemaphoreTake(mutex_log, portMAX_DELAY); // controlar productor-consumidor
             add_register_to_log(date, position, drive_pattern);
             xSemaphoreGive(mutex_log);
-        }
-        else{
+        } else {
             xSemaphoreGive(mutex_buffer_NMEA);
         }
     }

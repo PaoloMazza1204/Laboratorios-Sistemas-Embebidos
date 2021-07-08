@@ -335,7 +335,7 @@ bool ACCEL_Mod (float *dato)
     Accel_t accel;
     if (ACCEL_GetAccel(&accel))
     {
-        *dato = sqrt(accel.Accel_X*accel.Accel_X+accel.Accel_Y*accel.Accel_Y+accel.Accel_Z*accel.Accel_Z);
+        *dato = sqrt(accel.Accel_X*accel.Accel_X+accel.Accel_Y*accel.Accel_Y+(accel.Accel_Z-1.0)*(accel.Accel_Z-1.0));
         return true;
     }
     return false;

@@ -84,19 +84,19 @@
 #include "clock.h"
 #include "system.h"
 #include "tmr2.h"
+#include "spi1.h"
 #include "uart1.h"
 #include "interrupt_manager.h"
 #include "exceptions.h"
-#include "rtcc.h"
 #include "usb/usb.h"
 #include "adc1.h"
-#include "spi1.h"
+#include "rtcc.h"
 
 void SYSTEM_Initialize(void)
 {
     PIN_MANAGER_Initialize();
-    INTERRUPT_Initialize();
     CLOCK_Initialize();
+    INTERRUPT_Initialize();
     USBDeviceInit();
     USBDeviceAttach();
     SPI1_Initialize();
