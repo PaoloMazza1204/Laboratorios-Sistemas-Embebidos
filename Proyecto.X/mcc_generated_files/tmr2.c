@@ -159,7 +159,6 @@ uint16_t TMR2_Counter16BitGet( void )
 
 void __attribute__ ((weak)) TMR2_CallBack(void)
 {
-    LEDA_SetHigh();
     BUZ_CTRL_Toggle();
 }
 

@@ -26,7 +26,7 @@ uint8_t numBytes;
 MENU_MODE menu_mode = START;
 
 static void write(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint8_t* string1, uint8_t* string2);
-static void write_log(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint8_t id, time_t* date,
+static void write_log(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint16_t id, time_t* date,
         float latitude, float longitude, uint8_t* drive_pattern);
 static void datef(time_t* date, uint8_t* date_format);
 
@@ -107,7 +107,7 @@ bool confirm_config_ADC() {
 }
 
 void download_log(SemaphoreHandle_t semaphore_USB) {
-    uint8_t* patterns[] = {"OK", "BRUSCO", "CHOQUE"};
+    uint8_t * patterns[] = {"OK", "BRUSCO", "CHOQUE"};
     log_register_t* log = get_log();
     uint16_t id = get_id();
     uint8_t position = get_position();
@@ -130,7 +130,7 @@ void change_color() {
     ws2812_t color;
     uint8_t position;
     uint8_t * input[4];
-    input[0] = strtok(buffer, ",-");
+    input[0] = strtok(buffer, ",");
     for (position = 1; position < 4; position++) {
         input[position] = strtok(NULL, ",-");
     }
@@ -163,7 +163,7 @@ static void write(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint8_t* str
     putUSBUSART(buffer, numBytes);
 }
 
-static void write_log(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint8_t id, time_t* date,
+static void write_log(SemaphoreHandle_t semaphore_USB, uint8_t* format, uint16_t id, time_t* date,
         float latitude, float longitude, uint8_t* drive_pattern) {
     uint8_t date_format[19];
     datef(date, date_format);
