@@ -156,6 +156,8 @@ extern "C" {
     void ANALOG_convert( void *p_param);
 
     uint16_t ANALOG_getResult ( void );
+    
+    uint8_t adc_to_LEDs();
 
 
     /* Provide C++ Compatibility */

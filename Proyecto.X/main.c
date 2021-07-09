@@ -31,18 +31,18 @@
 #include "mcc_generated_files/tmr2.h"
 #include "mcc_generated_files/rtcc.h"
 
-#define DEFAULT_THRESHOLD                   1.5f
-#define DEFAULT_LOG_TIME                    10
-#define USE_GPS                             0       // Si se usa GPS, se debe poner en 1.
+#define DEFAULT_THRESHOLD                   1.5f    // Umbral por default.
+#define DEFAULT_LOG_TIME                    10      // Periodo de log por default.
+#define USE_GPS                             0       // Si se usa GPS, se debe poner en 1, sino en 0.
 #define STATIC_NMEA_FRAME                   "\r\n+CGNSINF: 1,1,20210705003045.000,-34.887747,-56.159689,139.200,0.69,110.9,1,,11.9,11.9,1.0,,7,3,,,32,,"
-#define configMINIMAL_STACK_SIZE_RESULT		( 250 )
-#define PHONE_NUMBER                        "\"092370344\""
-#define SMS                                 "ADVERTENCIA"
+#define configMINIMAL_STACK_SIZE_RESULT		( 250 ) // Memoria de stack para una tarea particular.
+#define PHONE_NUMBER                        "\"092370344\"" // Número a mandar mensaje. 
+#define SMS                                 "ADVERTENCIA"   // Mensaje a mandar.
 
 // Tareas.
 void update_LEDs(void *p_param);                    
 void config_ACCEL(void *p_param);                   
-void analog_result(void *p_param);                  
+void threshold_config(void *p_param);                  
 void button_check(void *p_param);                   
 void check_USB(void *p_param);                      
 void log_update(void *p_param);
@@ -50,61 +50,56 @@ void enable_log_update(void *p_param);
 void update_NMEA_GPS(void *p_param);
 void send_SMS(void *p_param);
 
-// Semaforos.
-SemaphoreHandle_t semaphore_ACCEL;
-SemaphoreHandle_t semaphore_config_adc;
-SemaphoreHandle_t semaphore_USB;
-SemaphoreHandle_t semaphore_enable_log;
-SemaphoreHandle_t semaphore_enable_sms;
-SemaphoreHandle_t mutex_log;
-SemaphoreHandle_t mutex_buffer_NMEA;
+// Semáforos.
+SemaphoreHandle_t semaphore_config_adc;             // Permiso para configurar umbrales.
+SemaphoreHandle_t semaphore_USB;                    // Permiso para usar el USB.
+SemaphoreHandle_t semaphore_enable_log;             // Permiso para realizar un registro.        
+SemaphoreHandle_t semaphore_enable_sms;             // Permiso para mandar un SMS.
+SemaphoreHandle_t mutex_log;                        // Para controlar la exclusión mutua para el log.
+SemaphoreHandle_t mutex_buffer_NMEA;                // Para controlar la exclusión mutua para el buffer_NMEA.
 
 // Variables globales.
-float threshold_abrupt = DEFAULT_THRESHOLD;
-float threshold_crash = DEFAULT_THRESHOLD;
-uint8_t log_time = DEFAULT_LOG_TIME;
+float threshold_abrupt = DEFAULT_THRESHOLD;         // Umbral brusco.
+float threshold_crash = DEFAULT_THRESHOLD;          // Umbral choque.
+uint8_t log_time = DEFAULT_LOG_TIME;                // Periodo para el log.
 uint8_t buffer_NMEA[104];                           // Guarda una trama del GPS.
 
-DRIVE_PATTERN drive_pattern = OK;
+DRIVE_PATTERN drive_pattern = OK;                   // Patrón de manejo actual.
 uint8_t threshold_to_change;                        // Umbral a configurar.
 
-/*
-                         Main application
- */
 
 int main(void) {
-    // initialize the device
     SYSTEM_Initialize();
     initialize_button_semaphore();
-    semaphore_ACCEL = xSemaphoreCreateBinary();
     semaphore_config_adc = xSemaphoreCreateBinary();
     semaphore_USB = xSemaphoreCreateBinary();
     semaphore_enable_log = xSemaphoreCreateBinary();
     semaphore_enable_sms = xSemaphoreCreateBinary();
     mutex_log = xSemaphoreCreateMutex();
     mutex_buffer_NMEA = xSemaphoreCreateMutex();
-    while (!ACCEL_init());
+    while (!ACCEL_init());                          // Esperamos que se inicialice el acelerómetro.
 
+    // Si no se usa el GPS, inicializamos la fecha.
     if (!USE_GPS) {
         struct tm static_date;
         GPS_getUTC(&static_date, STATIC_NMEA_FRAME);
         RTCC_TimeSet(&static_date);
     }
 
-    /* Create the tasks defined within this file. */
-    xTaskCreate(analog_result, "Result", configMINIMAL_STACK_SIZE_RESULT, NULL, tskIDLE_PRIORITY + 2, NULL);
-    xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    // Creación de tareas.
+    xTaskCreate(threshold_config, "T_Config", configMINIMAL_STACK_SIZE_RESULT, NULL, tskIDLE_PRIORITY + 2, NULL);
+    xTaskCreate(button_check, "Button", configMINIMAL_STACK_SIZE_RESULT, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(check_USB, "USB", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL);
     xTaskCreate(update_LEDs, "Leds", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(log_update, "log", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(enable_log_update, "enable", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(log_update, "Log", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(enable_log_update, "L_Update", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 
     xTaskCreate(SIM808_taskCheck, "ModemTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(SIM808_initModule, "ModemIni", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &modemInitHandle);
     xTaskCreate(update_NMEA_GPS, "DataGPS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    //xTaskCreate(send_SMS, "sendSMS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    //xTaskCreate(config_ACCEL, "ACCEL", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
-    /* Finally start the scheduler. */
+    xTaskCreate(send_SMS, "Send_SMS", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+ 
+    // Inicializamos el Scheduler.
     vTaskStartScheduler();
 
     /* If all is well, the scheduler will now be running, and the following line
@@ -121,14 +116,15 @@ int main(void) {
  * @param p_param
  */
 void update_NMEA_GPS(void *p_param) {
-    uint8_t buffer[104];
+    uint8_t buffer[104];                            // Mantiene la trama.
     for (;;) {
         do {
             xSemaphoreTake(c_semGPSIsReady, portMAX_DELAY);
             SIM808_getNMEA(buffer);
             xSemaphoreGive(c_semGPSIsReady);
+            // Si no se usa el GPS se utiliza la trama predefinida.
             if (!USE_GPS) {
-                strcpy(buffer, STATIC_NMEA_FRAME);
+                strcpy(buffer, STATIC_NMEA_FRAME);  
             }
             vTaskDelay(pdMS_TO_TICKS(2000));
         } while (!SIM808_validateNMEAFrame(buffer));
@@ -139,7 +135,7 @@ void update_NMEA_GPS(void *p_param) {
 }
 
 /**
- * Esta tarea se encarga de mandar SMSs una vez que sea habilitada por el semaforo.
+ * Esta tarea se encarga de mandar un SMS una vez que sea habilitada por el semáforo.
  * @param p_param
  */
 void send_SMS(void* p_param) {
@@ -151,68 +147,56 @@ void send_SMS(void* p_param) {
             sms_sent = SIM808_sendSMS(PHONE_NUMBER, SMS);
             xSemaphoreGive(c_semGSMIsReady);
             vTaskDelay(pdMS_TO_TICKS(2000));
-        } while (sms_sent != 1);
+        } while (sms_sent != 1);                    // Mientras no se manda el SMS.
     }
 }
 
 /**
- * Está constantemente inicializando el acelerometro hasta que se haga correctamente.
- * @param p_param
- */
-void config_ACCEL(void *p_param) {
-    while (!ACCEL_init()) {
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-    xSemaphoreGive(semaphore_ACCEL);
-}
-
-/**
- * Actualiza el color de los leds dependiendo de la aceleracion que se obtenga.
- * Si se pasa de un estado OK a un estado ABRUPTO o CHOQUE, o si se pasa de un
- * estado ABRUPTO a CHOQUE, hace parpadear los leds RGB mientras produce un 
- * sonido de alarma, ademas, habilita para que la tarea send_SMS pueda enviar
- * un mensaje alertando de la situacion.
+ * Actualiza el color de los leds dependiendo de la aceleración que se obtenga.
+ * Si se pasa a un estado ABRUPTO o CHOQUE, hace parpadear los leds RGB mientras produce un 
+ * sonido de alarma. Si se aumenta de riesgo, se habilita para que la tarea send_SMS pueda enviar
+ * un mensaje alertando de la situación y se registra la situación.
  * @param p_param
  */
 void update_LEDs(void *p_param) {
     ws2812_t color;
     DRIVE_PATTERN last_pattern = drive_pattern;
     for (;;) {
-        //xSemaphoreTake(semaphore_ACCEL, portMAX_DELAY);
-        drive_pattern = get_state_color(&threshold_abrupt, &threshold_crash);
+        drive_pattern = get_drive_pattern(&threshold_abrupt, &threshold_crash);
         color = drive_pattern == OK ? get_mode_color(COLOR_OK_POSITION) :
                 drive_pattern == ABRUPT ? get_mode_color(COLOR_ABRUPT_POSITION) :
                 get_mode_color(COLOR_CRASH_POSITION);
-        //xSemaphoreGive(semaphore_ACCEL);
         if (drive_pattern == OK) {
             update_LEDs_array(color, 8);
         } else {
+            // Aumenta el riesgo.
             if ((drive_pattern == ABRUPT && last_pattern == OK) ||
                     (drive_pattern == CRASH && last_pattern != CRASH)) {
                 xSemaphoreGive(semaphore_enable_sms);
                 xSemaphoreGive(semaphore_enable_log);
             }
             uint8_t i;
+            // Parpadeo de ledes y sonido.
             for (i = 0; i < 3; i++) {
                 update_LEDs_array(color, 8);
-                TMR2_Start();
+                TMR2_Start();                       // Inicia sonido.
                 vTaskDelay(pdMS_TO_TICKS(166));
-                TMR2_Stop();
+                TMR2_Stop();                        // Termina sonido.
                 update_LEDs_array(BLACK, 8);
                 vTaskDelay(pdMS_TO_TICKS(166));
             }
         }
-        last_pattern = drive_pattern;
+        last_pattern = drive_pattern;               // Se actualiza el ultimo patrón.
     }
 }
 
 /**
  * Actualiza el valor de los umbrales correspondientes al voltaje asignado 
- * utilizando el acelerometro, cuando se ingresa la palabra "confirmar" se fija
- * ese valor, si se ingresa "cancelar", se cancela la configuracion.
+ * utilizando el acelerómetro, cuando se ingresa la palabra "confirmar" se fija
+ * ese valor, si se ingresa "cancelar", se cancela la configuración.
  * @param p_param
  */
-void analog_result(void *p_param) {
+void threshold_config(void *p_param) {
     TaskHandle_t handle_convert = NULL;
     bool confirm;
     uint8_t leds;
@@ -220,23 +204,32 @@ void analog_result(void *p_param) {
     for (;;) {
         confirm = false;
         xSemaphoreTake(semaphore_config_adc, portMAX_DELAY);
+        // Iniciamos conversión.
         xTaskCreate(ANALOG_convert, "Convert", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, &handle_convert);
         leds = 0;
+        // Mientras no se ingrese "confirmar" ni "cancelar", se actualizan los ledes.
         while (!cancel_config_ADC() && !confirm) {
             leds_actual = adc_to_LEDs();
+            // Si la cantidad de ledes cambian.
             if (leds_actual != leds) {
+                // Si estamos en el modo correcto y los umbrales no sobrepasan de su cota inferior o superior.
                 if (((compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG)) && ((leds_actual - 1) + DEFAULT_THRESHOLD <= threshold_crash))
                         || ((compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) && ((leds_actual - 1) + DEFAULT_THRESHOLD >= threshold_abrupt))) {
                     update_LEDs_array(get_mode_color(COLOR_THRESHOLD_POSITION), leds_actual);
                     leds = leds_actual;
-                } else if (compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG)) {
+                } 
+                // Estamos configurando el umbral ABRUPTO.
+                else if (compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG)) {
                     update_LEDs_array(get_mode_color(COLOR_THRESHOLD_POSITION), (uint8_t) (threshold_crash - DEFAULT_THRESHOLD + 1));
-                } else if (compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) {
+                }
+                // Estamos configurando el umbral CHOQUE.
+                else if (compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) {
                     update_LEDs_array(get_mode_color(COLOR_THRESHOLD_POSITION), (uint8_t) (threshold_abrupt - DEFAULT_THRESHOLD + 1));
                 }
             }
             confirm = confirm_config_ADC();
         }
+        // Si se confirma se actualiza el valor correspondiente.
         if (confirm) {
             if (compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG)) {
                 threshold_abrupt = DEFAULT_THRESHOLD + ((leds > 0) ? (leds - 1) : 0);
@@ -245,12 +238,13 @@ void analog_result(void *p_param) {
             }
         }
         reset_menu_mode();
-        vTaskDelete(handle_convert);
+        // Terminamos conversión.
+        vTaskDelete(handle_convert);                // Eliminamos la tarea ANALOG_convert.
     }
 }
 
 /**
- * Chequea que el USB este listo y realiza el CDCTxService periodicamente.
+ * Chequea que el USB este listo y habilita su uso, además realiza el CDCTxService periodicamente.
  * @param p_param
  */
 void check_USB(void *p_param) {
@@ -268,15 +262,15 @@ void check_USB(void *p_param) {
 }
 
 /**
- * Espera a que se presione el boton y maneja posibles respuestas del menu.
+ * Espera a que se presione el botón y maneja posibles respuestas del menú.
  * @param p_param
  */
 void button_check(void *p_param) {
     for (;;) {
-        // Este semaforo se habilita cuando ocurre una interrupcion 
-        // al apretar el boton.
+        // Este semáforo se habilita cuando ocurre una interrupción al apretar el botón.
         take_button_semaphore();
         user_interface(semaphore_USB);
+        // Dependiendo del modo del menú, manejamos diferentes situaciones.
         if (compare_to_menu_mode(THRESHOLD_ABRUPT_CONFIG) || compare_to_menu_mode(THRESHOLD_CRASH_CONFIG)) {
             xSemaphoreGive(semaphore_config_adc);
         } else if (compare_to_menu_mode(LOG_TIME_CONFIG)) {
@@ -297,18 +291,19 @@ void log_update(void* p_param) {
     GPSPosition_t position;
     struct tm date;
     for (;;) {
-        // habilita cada x tiempo tomar la medicion.
+        // Esperamos que se habilite el semáforo para registrar.
         xSemaphoreTake(semaphore_enable_log, portMAX_DELAY); 
         xSemaphoreTake(mutex_buffer_NMEA, portMAX_DELAY);
+        // Se verifica que la trama no este vacía.
         if (buffer_NMEA[0] != '\0') {
             GPS_getPosition(&position, buffer_NMEA);
+            // Si se usa el GPS, tomamos el tiempo del mismo. Sino se usa el RTCC.
             if (USE_GPS) {
                 GPS_getUTC(&date, buffer_NMEA);
             } else {
                 RTCC_TimeGet(&date);
             }
             xSemaphoreGive(mutex_buffer_NMEA);
-            // Controlar productor-consumidor.
             xSemaphoreTake(mutex_log, portMAX_DELAY);
             add_register_to_log(date, position, drive_pattern);
             xSemaphoreGive(mutex_log);

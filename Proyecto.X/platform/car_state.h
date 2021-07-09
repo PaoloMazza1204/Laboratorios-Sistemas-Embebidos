@@ -31,8 +31,7 @@ typedef enum {
     CRASH
 } DRIVE_PATTERN;
 
-DRIVE_PATTERN get_state_color(float* threshold_abrupt, float* threshold_crash);
-uint8_t adc_to_LEDs();
+DRIVE_PATTERN get_drive_pattern(float* threshold_abrupt, float* threshold_crash);
 
 #endif /* _CAR_STATE_H */
 

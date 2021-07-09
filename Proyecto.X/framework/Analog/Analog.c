@@ -158,6 +158,15 @@ uint16_t ANALOG_getResult( void )
     return conversionResult;
 }
 
+/**
+ * Devuelve la cantidad de leds a prender segun el valor analogico del ADC.
+ * @return 
+ */
+uint8_t adc_to_LEDs() {
+    uint16_t result = ANALOG_getResult();
+    return (result / 128) + 1;
+}
+
 
 /* *****************************************************************************
  End of File

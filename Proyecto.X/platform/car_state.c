@@ -1,32 +1,24 @@
 /* ************************************************************************** */
-/** Descriptive File Name
-
-  @Company
-    Company Name
+/** car_state
 
   @File Name
-    filename.c
+    car_state.c
 
   @Summary
-    Brief description of the file.
-
-  @Description
-    Describe the purpose of this file.
+    Módulo para obtener el patrón de manejo del auto.
  */
 /* ************************************************************************** */
 #include "car_state.h"
 
-Accel_t accel;
-
 /**
- * Devuelve un patron de manejo segun el valor del acelerometro.
+ * Devuelve un patrón de manejo según el valor del acelerómetro.
  * @param threshold_abrupt
  * Umbral para entrar en modo ABRUPTO.
  * @param threshold_crash
  * Umbral para entrar en modo CHOQUE.
  * @return 
  */
-DRIVE_PATTERN get_state_color(float* threshold_abrupt, float* threshold_crash) {
+DRIVE_PATTERN get_drive_pattern(float* threshold_abrupt, float* threshold_crash) {
     float accel_value;
     ACCEL_Mod(&accel_value);
     if (accel_value < *threshold_abrupt) {
@@ -36,15 +28,6 @@ DRIVE_PATTERN get_state_color(float* threshold_abrupt, float* threshold_crash) {
         return ABRUPT;
     }
     return CRASH;
-}
-
-/**
- * Devuelve la cantidad de leds a prender segun el valor analogico del ADC.
- * @return 
- */
-uint8_t adc_to_LEDs() {
-    uint16_t result = ANALOG_getResult();
-    return (result / 128) + 1;
 }
 
 /* *****************************************************************************

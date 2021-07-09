@@ -1,17 +1,11 @@
 /* ************************************************************************** */
-/** Descriptive File Name
-
-  @Company
-    Company Name
+/** Button
 
   @File Name
-    filename.c
+    Button.c
 
   @Summary
-    Brief description of the file.
-
-  @Description
-    Describe the purpose of this file.
+    Contiene un semáforo para el manejo del botón.
  */
 /* ************************************************************************** */
 
@@ -20,14 +14,14 @@
 SemaphoreHandle_t semaphore_button;
 
 /**
- * Crea el semaforo para el boton.
+ * Crea el semáforo para el botón.
  */
 void initialize_button_semaphore(){
     semaphore_button = xSemaphoreCreateBinary();
 }
 
 /**
- * Libera el semaforo del boton, se utiliza en la interrupcion.
+ * Libera el semáforo del botón, se utiliza en la interrupción.
  */
 void give_button_semaphore(){
     BaseType_t xHigherPriorityTaskWoken;
@@ -36,7 +30,7 @@ void give_button_semaphore(){
 }
 
 /**
- * Toma el semaforo del boton.
+ * Toma el semáforo del botón.
  */
 void take_button_semaphore(){
     xSemaphoreTake(semaphore_button, portMAX_DELAY);
