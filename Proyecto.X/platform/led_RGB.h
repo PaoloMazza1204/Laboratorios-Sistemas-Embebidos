@@ -23,32 +23,7 @@
 #define COLOR_CRASH_POSITION 2
 #define COLOR_THRESHOLD_POSITION 3
 
-//typedef struct {
-//    uint8_t led;
-//    uint8_t color;
-//    uint32_t time;
-//} app_register_t;
-
-// *****************************************************************************
-// Section: Interface Functions
-// *****************************************************************************
-uint8_t map_led_RGB(uint8_t led);
-
 void initialize_leds_RGB();
-
-//void initialize_app_register();
-
-//uint8_t get_last_led();
-//
-//uint8_t get_last_color();
-//
-//uint32_t get_last_time();
-//
-//void set_last_led(uint8_t led);
-//
-//void set_last_color(uint8_t color);
-//
-//void set_last_time(uint32_t time);
 
 bool compare_colors(ws2812_t color1, ws2812_t color2);
 

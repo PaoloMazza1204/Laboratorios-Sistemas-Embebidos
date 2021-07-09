@@ -1,12 +1,6 @@
 /**
   Section: Included Files
  */
-/* TO-DO:
- * Mostrar "cancelar" luego de seleccionar ajustar umbrales
- * Sacar date.c y date.h
- * Revisar msj
- * Revisar comentario de linea 180
- */
 /* Kernel includes. */
 #include "freeRTOS/include/FreeRTOS.h"
 #include "freeRTOS/include/task.h"
@@ -16,7 +10,6 @@
 #include "mcc_generated_files/usb/usb_device_cdc.h"
 #include "mcc_generated_files/system.h"
 #include "mcc_generated_files/pin_manager.h"
-#include "platform/date.h"
 #include "freeRTOS/include/semphr.h"
 #include "framework/Analog/Analog.h"
 #include "platform/WS2812.h"
@@ -31,11 +24,11 @@
 #include "mcc_generated_files/tmr2.h"
 #include "mcc_generated_files/rtcc.h"
 
-#define DEFAULT_THRESHOLD                   1.5f    // Umbral por default.
+#define configMINIMAL_STACK_SIZE_RESULT		( 250 ) // Memoria de stack para una tarea particular.
 #define DEFAULT_LOG_TIME                    10      // Periodo de log por default.
+#define DEFAULT_THRESHOLD                   1.5f    // Umbral por default.
 #define USE_GPS                             0       // Si se usa GPS, se debe poner en 1, sino en 0.
 #define STATIC_NMEA_FRAME                   "\r\n+CGNSINF: 1,1,20210705003045.000,-34.887747,-56.159689,139.200,0.69,110.9,1,,11.9,11.9,1.0,,7,3,,,32,,"
-#define configMINIMAL_STACK_SIZE_RESULT		( 250 ) // Memoria de stack para una tarea particular.
 #define PHONE_NUMBER                        "\"092370344\"" // Número a mandar mensaje. 
 #define SMS                                 "ADVERTENCIA"   // Mensaje a mandar.
 

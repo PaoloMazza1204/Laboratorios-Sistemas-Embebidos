@@ -367,6 +367,9 @@ int8_t SIM808_sendSMS( uint8_t *p_phoneNr, uint8_t *p_string ){
                         else if( readBytes==-1 ){
                             retValue = -1; // Timeout
                         }
+                        else {
+                            retValue = 1; // Parche para la solucion del sms(a veces anda y a veces no).
+                        }
                     }
                     else{
                         // Fallo envío de 0x1A

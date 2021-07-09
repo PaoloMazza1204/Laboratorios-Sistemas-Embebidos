@@ -9,7 +9,6 @@
  */
 /* ************************************************************************** */
 #include "menu.h"
-#include "date.h"
 #include "led_RGB.h"
 
 #define CANCEL_CONFIG_ADC "Cancelar"
