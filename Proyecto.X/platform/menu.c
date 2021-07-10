@@ -75,13 +75,14 @@ void user_interface(SemaphoreHandle_t semaphore_USB) {
                 menu_mode = WAITING_COLOR;
                 write(semaphore_USB, "\n\nIngrese: R,G,B-MODO, donde MODO = {OK,BRUSCO,CHOQUE,UMBRAL}", NULL, NULL);
             }
-        }// Ingresa color a cambiar.
-        else if ((menu_mode == WAITING_COLOR) && (numBytes > 0)) {
-            change_color();
-            return;
         } else if (strncasecmp("cancelar", buffer, strlen("cancelar")) == 0) {
             greeting_sent = false;
             menu_mode = START;
+        }
+        // Ingresa color a cambiar.
+        else if ((menu_mode == WAITING_COLOR) && (numBytes > 0)) {
+            change_color();
+            return;
         }
     }
 }
